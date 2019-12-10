@@ -10,6 +10,4 @@ class DiscordClient : public SleepyDiscord::BaseDiscordClient {
  public:
   DiscordClient(const std::string& token);
   ~DiscordClient();
-
-  void establishConnection();
 };

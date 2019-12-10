@@ -63,7 +63,6 @@ int main(int argc, char **argv) {
 #endif
 
   DiscordClient client(TOKEN);
-  client.establishConnection();
 
   while (appletMainLoop()) {
 #ifdef APPLET
