@@ -1,7 +1,5 @@
 #include <curl/curl.h>
 
-#include <map>
-
 #include "discord_session.h"
 
 SleepyDiscord::CustomInit SleepyDiscord::Session::init =
@@ -12,7 +10,9 @@ void DiscordSession::setUrl(const std::string& url) { _url = url; }
 void DiscordSession::setBody(const std::string* body) { _body = body; }
 
 void DiscordSession::setHeader(
-    const std::vector<SleepyDiscord::HeaderPair>& header) {}
+    const std::vector<SleepyDiscord::HeaderPair>& header) {
+  _headers = &header;
+}
 
 void DiscordSession::setMultipart(
     const std::initializer_list<SleepyDiscord::Part>& parts) {}
@@ -68,7 +68,7 @@ size_t curl_header_callback(
 }
 
 SleepyDiscord::Response DiscordSession::request(
-    const SleepyDiscord::RequestMethod method) const {
+    const SleepyDiscord::RequestMethod method) {
   SleepyDiscord::Response response;
 
   CURL* curl = curl_easy_init();
@@ -76,6 +76,8 @@ SleepyDiscord::Response DiscordSession::request(
     std::string s_response;
     std::map<std::string, std::string> headers_response;
     long response_code;
+    struct curl_slist* headers = nullptr;
+
     curl_easy_setopt(curl, CURLOPT_URL,
                      _url.c_str());               // getting URL from char *url
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);  // useful for debugging
@@ -88,6 +90,16 @@ SleepyDiscord::Response DiscordSession::request(
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, curl_header_callback);
     curl_easy_setopt(curl, CURLOPT_HEADERDATA, &headers_response);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+
+    if (_headers) {
+      for (const SleepyDiscord::HeaderPair& pair : *_headers) {
+        std::string header(pair.name);
+        header.append(": ");
+        header.append(pair.value);
+        headers = curl_slist_append(headers, header.c_str());
+      }
+      curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    }
 
     if (method == SleepyDiscord::Post && _body) {
       curl_easy_setopt(curl, CURLOPT_POSTFIELDS, _body->c_str());
@@ -103,10 +115,15 @@ SleepyDiscord::Response DiscordSession::request(
       response.statusCode = SleepyDiscord::BAD_REQUEST;
     }
 
+    if (headers) {
+      curl_slist_free_all(headers);
+    }
     curl_easy_cleanup(curl);
   } else {
     printf("Couldn't initialize curl\n");
   }
 
+  _body = nullptr;
+  _headers = nullptr;
   return response;
 }

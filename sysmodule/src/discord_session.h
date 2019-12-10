@@ -4,10 +4,10 @@
 class DiscordSession : public SleepyDiscord::GenericSession {
  private:
   std::string _url;
-  const std::string* _body;
+  const std::string* _body = nullptr;
+  const std::vector<SleepyDiscord::HeaderPair>* _headers = nullptr;
 
-  SleepyDiscord::Response request(
-      const SleepyDiscord::RequestMethod method) const;
+  SleepyDiscord::Response request(const SleepyDiscord::RequestMethod method);
 
  public:
   void setUrl(const std::string& url) override;
