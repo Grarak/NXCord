@@ -42,6 +42,7 @@ BUILD		:=	build
 SOURCES		:=	src
 DATA		:=	data
 INCLUDES	:=	include
+TOKEN		:=	`[ -f $(TOPDIR)/.token ] && cat $(TOPDIR)/.token`
 #ROMFS	:=	romfs
 
 #---------------------------------------------------------------------------------
@@ -50,7 +51,7 @@ INCLUDES	:=	include
 ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
-			$(ARCH) $(DEFINES) $(BUILD_FLAGS)
+			$(ARCH) $(DEFINES) $(BUILD_FLAGS) -DTOKEN=\"$(TOKEN)\"
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__ `aarch64-none-elf-pkg-config --cflags sleepy_discord` `curl-config --cflags`
 
