@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
   DiscordClient client(TOKEN);
 
   while (appletMainLoop()) {
+    client.tick();
 #ifdef APPLET
     hidScanInput();
     u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
