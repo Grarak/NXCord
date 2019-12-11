@@ -1,4 +1,5 @@
-#include <stdexcept>
+#include <mbedtls/error.h>
+#include <sys/socket.h>
 
 #include "mbedtls_wrapper.h"
 
@@ -42,6 +43,11 @@ MBedTLSWrapper::MBedTLSWrapper(const std::string& hostname) {
 }
 
 MBedTLSWrapper::~MBedTLSWrapper() {
+  if (_fd > 0) {
+    printf("Closing connection to %d\n", _fd);
+    close(_fd);
+  }
+
   mbedtls_entropy_free(&_entropy);
   mbedtls_ctr_drbg_free(&_ctr_drbg);
   mbedtls_x509_crt_free(&_cacert);
@@ -53,10 +59,29 @@ bool MBedTLSWrapper::usable() const { return _error.empty(); }
 
 std::string MBedTLSWrapper::get_error() const { return _error; }
 
-void MBedTLSWrapper::register_send_receive(void* p_bio,
-                                           mbedtls_ssl_send_t* f_send,
-                                           mbedtls_ssl_recv_t* f_recv) {
-  mbedtls_ssl_set_bio(&_ssl, p_bio, f_send, f_recv, nullptr);
+void MBedTLSWrapper::set_fd(int fd) {
+  _fd = fd;
+  mbedtls_ssl_set_bio(
+      &_ssl, this,
+      [](void* ctx, const unsigned char* buf, size_t len) {
+        auto mbedtls_wrapper = static_cast<MBedTLSWrapper*>(ctx);
+        int size = send(mbedtls_wrapper->_fd, buf, len, 0);
+        if (size < 0) {
+          printf("Send error %d", size);
+          return -1;
+        }
+        return size;
+      },
+      [](void* ctx, unsigned char* buf, size_t len) {
+        auto mbedtls_wrapper = static_cast<MBedTLSWrapper*>(ctx);
+        int size = recv(mbedtls_wrapper->_fd, buf, len, 0);
+        if (size < 0) {
+          printf("Receive error %d", size);
+          return -1;
+        }
+        return size;
+      },
+      nullptr);
 }
 
 bool MBedTLSWrapper::start_ssl() {

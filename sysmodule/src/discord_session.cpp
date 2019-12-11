@@ -3,9 +3,10 @@
 #include <unistd.h>
 
 #include "discord_session.h"
-#include "mbedtls_wrapper.h"
 
 #define NEW_LINE "\r\n"
+constexpr const char* METHOD_NAMES[] = {"POST", "PATCH", "DELETE", "GET",
+                                        "PUT"};
 
 SleepyDiscord::CustomInit SleepyDiscord::Session::init =
     []() -> SleepyDiscord::GenericSession* { return new DiscordSession; };
@@ -22,29 +23,10 @@ void DiscordSession::setHeader(
 void DiscordSession::setMultipart(
     const std::initializer_list<SleepyDiscord::Part>& parts) {}
 
-SleepyDiscord::Response DiscordSession::Post() {
-  return request(SleepyDiscord::Post);
-}
-
-SleepyDiscord::Response DiscordSession::Patch() {
-  return {SleepyDiscord::BAD_REQUEST, "", {}};
-}
-
-SleepyDiscord::Response DiscordSession::Delete() {
-  return {SleepyDiscord::BAD_REQUEST, "", {}};
-}
-
-SleepyDiscord::Response DiscordSession::Get() {
-  return request(SleepyDiscord::Get);
-}
-
-SleepyDiscord::Response DiscordSession::Put() {
-  return {SleepyDiscord::BAD_REQUEST, "", {}};
-}
-
-SleepyDiscord::Response DiscordSession::request(
-    const SleepyDiscord::RequestMethod method) {
-  SleepyDiscord::Response response;
+std::shared_ptr<MBedTLSWrapper> DiscordSession::request(
+    const SleepyDiscord::RequestMethod method,
+    SleepyDiscord::Response* response) {
+  printf("Requesting %s %s\n", _url.c_str(), METHOD_NAMES[method]);
 
   std::string hostname, path;
   std::string protocol = _url.substr(0, _url.find("://"));
@@ -57,17 +39,17 @@ SleepyDiscord::Response DiscordSession::request(
       path = _url.substr(offset);
     }
   } else {
-    return {SleepyDiscord::GENERAL_ERROR,
-            "{\"code\":0,\"message\":\"Invalid url\"\"}",
-            {}};
+    response->statusCode = SleepyDiscord::GENERAL_ERROR;
+    response->text = "{\"code\":0,\"message\":\"Invalid url\"\"}";
+    return nullptr;
   }
 
-  MBedTLSWrapper mbedtls_wrapper(hostname);
-  if (!mbedtls_wrapper.usable()) {
-    return {
-        SleepyDiscord::GENERAL_ERROR,
-        "{\"code\":0,\"message\":\"" + mbedtls_wrapper.get_error() + "\"\"}",
-        {}};
+  auto mbedtls_wrapper = std::make_shared<MBedTLSWrapper>(hostname);
+  if (!mbedtls_wrapper->usable()) {
+    response->statusCode = SleepyDiscord::GENERAL_ERROR;
+    response->text =
+        "{\"code\":0,\"message\":\"" + mbedtls_wrapper->get_error() + "\"\"}";
+    return mbedtls_wrapper;
   }
 
   struct addrinfo hints {};
@@ -76,13 +58,16 @@ SleepyDiscord::Response DiscordSession::request(
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   struct addrinfo* res;
+
+  printf("Connecting to %s\n", hostname.c_str());
   r = getaddrinfo(hostname.c_str(), "443", &hints, &res);
   if (r != 0) {
-    return {SleepyDiscord::GENERAL_ERROR,
-            "{\"code\":0,\"message\":\"getaddrinfo: " +
-                std::string(gai_strerror(r)) + "\"}",
-            {}};
+    response->statusCode = SleepyDiscord::GENERAL_ERROR;
+    response->text = "{\"code\":0,\"message\":\"getaddrinfo: " +
+                     std::string(gai_strerror(r)) + "\"}";
+    return mbedtls_wrapper;
   }
+
   for (struct addrinfo* rp = res; rp; rp = rp->ai_next) {
     fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
     if (fd == -1) {
@@ -99,42 +84,24 @@ SleepyDiscord::Response DiscordSession::request(
   }
   freeaddrinfo(res);
   if (fd == -1) {  // error check
-    return {SleepyDiscord::GENERAL_ERROR,
-            "{\"code\":431,\"message\":\"Could not connect to the host\"}",
-            {}};
+    response->statusCode = SleepyDiscord::GENERAL_ERROR;
+    response->text =
+        "{\"code\":431,\"message\":\"Could not connect to the host\"}";
+    return mbedtls_wrapper;
   }
 
-  mbedtls_wrapper.register_send_receive(
-      &fd,
-      [](void* ctx, const unsigned char* buf, size_t len) {
-        int* fd = static_cast<int*>(ctx);
-        int size = send(*fd, buf, len, 0);
-        if (size < 0) {
-          printf("Send error %d", size);
-          return -1;
-        }
-        return size;
-      },
-      [](void* ctx, unsigned char* buf, size_t len) {
-        int* fd = static_cast<int*>(ctx);
-        int size = recv(*fd, buf, len, 0);
-        if (size < 0) {
-          printf("Receive error %d", size);
-          return -1;
-        }
-        return size;
-      });
+  printf("Connection established %d\n", fd);
+  mbedtls_wrapper->set_fd(fd);
 
-  if (!mbedtls_wrapper.start_ssl()) {
-    close(fd);
-    return {
-        SleepyDiscord::GENERAL_ERROR,
-        "{\"code\":431,\"message\":\"" + mbedtls_wrapper.get_error() + "\"}",
-        {}};
+  printf("Start handshake\n");
+  if (!mbedtls_wrapper->start_ssl()) {
+    response->statusCode = SleepyDiscord::GENERAL_ERROR;
+    response->text =
+        "{\"code\":431,\"message\":\"" + mbedtls_wrapper->get_error() + "\"}";
+    return mbedtls_wrapper;
   }
 
-  const char* method_names[] = {"POST", "PATCH", "DELETE", "GET", "PUT"};
-  std::string metadata = method_names[method];
+  std::string metadata = METHOD_NAMES[method];
   metadata.append(" ").append(path).append(" HTTP/1.1").append(NEW_LINE);
   metadata.append("Host: ").append(hostname).append(NEW_LINE);
   metadata.append("Accept: */*").append(NEW_LINE);
@@ -154,29 +121,29 @@ SleepyDiscord::Response DiscordSession::request(
   }
   metadata.append(NEW_LINE);
 
-  if (!mbedtls_wrapper.write(metadata.c_str(), metadata.size())) {
-    close(fd);
-    return {
-        SleepyDiscord::GENERAL_ERROR,
-        "{\"code\":431,\"message\":\"" + mbedtls_wrapper.get_error() + "\"}",
-        {}};
+  printf("Sending payload\n");
+  if (!mbedtls_wrapper->write(metadata.c_str(), metadata.size())) {
+    response->statusCode = SleepyDiscord::GENERAL_ERROR;
+    response->text =
+        "{\"code\":431,\"message\":\"" + mbedtls_wrapper->get_error() + "\"}";
+    return mbedtls_wrapper;
   }
   if (_body) {
-    if (!mbedtls_wrapper.write(_body->c_str(), _body->size())) {
-      close(fd);
-      return {
-          SleepyDiscord::GENERAL_ERROR,
-          "{\"code\":431,\"message\":\"" + mbedtls_wrapper.get_error() + "\"}",
-          {}};
+    if (!mbedtls_wrapper->write(_body->c_str(), _body->size())) {
+      response->statusCode = SleepyDiscord::GENERAL_ERROR;
+      response->text =
+          "{\"code\":431,\"message\":\"" + mbedtls_wrapper->get_error() + "\"}";
+      return mbedtls_wrapper;
     }
   }
 
+  printf("Reading response\n");
   size_t buf_size = 1024;
   char buf[buf_size];
   bool collect_headers = true;
   std::string header_buf;
   size_t ret;
-  while ((ret = mbedtls_wrapper.read(buf, buf_size)) > 0) {
+  while ((ret = mbedtls_wrapper->read(buf, buf_size)) > 0) {
     buf[ret] = 0;
 
     if (collect_headers) {
@@ -188,8 +155,8 @@ SleepyDiscord::Response DiscordSession::request(
           if (header_buf.empty() && header_start == header_end) {
             collect_headers = false;
             if (header_end + 2 < ret) {
-              response.text.insert(response.text.end(), buf + header_end + 2,
-                                   buf + ret);
+              response->text.insert(response->text.end(), buf + header_end + 2,
+                                    buf + ret);
             }
             break;
           }
@@ -197,15 +164,15 @@ SleepyDiscord::Response DiscordSession::request(
           std::string new_header = header_buf;
           new_header.insert(new_header.end(), buf + header_start,
                             buf + header_end);
-          if (response.header.empty() && new_header.substr(0, 4) == "HTTP") {
-            response.statusCode = stoi(new_header.substr(9, 3));
+          if (response->header.empty() && new_header.substr(0, 4) == "HTTP") {
+            response->statusCode = stoi(new_header.substr(9, 3));
           } else {
             size_t key_size = new_header.find(": ");
             if (key_size > 0) {
               std::string key = new_header.substr(0, key_size);
               std::string value =
                   new_header.substr(key_size + 2, new_header.size());
-              response.header[std::move(key)] = std::move(value);
+              response->header[std::move(key)] = std::move(value);
             }
           }
           header_buf.clear();
@@ -226,8 +193,8 @@ SleepyDiscord::Response DiscordSession::request(
                           buf + header_end);
       }
     } else {
-      response.text.insert(response.text.end(), buf,
-                           buf + ret);  // TODO use content length if possible
+      response->text.insert(response->text.end(), buf,
+                            buf + ret);  // TODO use content length if possible
     }
 
     if (ret < buf_size) {
@@ -235,9 +202,33 @@ SleepyDiscord::Response DiscordSession::request(
     }
   }
 
-  close(fd);
+  printf("Closing connection to %s\n", hostname.c_str());
 
   _body = nullptr;
   _headers = nullptr;
+  return mbedtls_wrapper;
+}
+
+SleepyDiscord::Response DiscordSession::Post() {
+  SleepyDiscord::Response response;
+  request(SleepyDiscord::Post, &response);
   return response;
+}
+
+SleepyDiscord::Response DiscordSession::Patch() {
+  return {SleepyDiscord::BAD_REQUEST, "", {}};
+}
+
+SleepyDiscord::Response DiscordSession::Delete() {
+  return {SleepyDiscord::BAD_REQUEST, "", {}};
+}
+
+SleepyDiscord::Response DiscordSession::Get() {
+  SleepyDiscord::Response response;
+  request(SleepyDiscord::Get, &response);
+  return response;
+}
+
+SleepyDiscord::Response DiscordSession::Put() {
+  return {SleepyDiscord::BAD_REQUEST, "", {}};
 }

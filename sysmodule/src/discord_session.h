@@ -1,13 +1,13 @@
 #pragma once
 #include <sleepy_discord/sleepy_discord.h>
 
+#include "mbedtls_wrapper.h"
+
 class DiscordSession : public SleepyDiscord::GenericSession {
  private:
   std::string _url;
   const std::string* _body = nullptr;
   const std::vector<SleepyDiscord::HeaderPair>* _headers = nullptr;
-
-  SleepyDiscord::Response request(const SleepyDiscord::RequestMethod method);
 
  public:
   void setUrl(const std::string& url) override;
@@ -15,6 +15,10 @@ class DiscordSession : public SleepyDiscord::GenericSession {
   void setHeader(const std::vector<SleepyDiscord::HeaderPair>& header) override;
   void setMultipart(
       const std::initializer_list<SleepyDiscord::Part>& parts) override;
+
+  std::shared_ptr<MBedTLSWrapper> request(
+      const SleepyDiscord::RequestMethod method,
+      SleepyDiscord::Response* response);
 
   SleepyDiscord::Response Post() override;
   SleepyDiscord::Response Patch() override;
