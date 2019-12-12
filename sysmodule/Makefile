@@ -53,14 +53,19 @@ ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES) $(BUILD_FLAGS) -DTOKEN=\"$(TOKEN)\"
 
-CFLAGS	+=	$(INCLUDE) -D__SWITCH__ `aarch64-none-elf-pkg-config --cflags sleepy_discord` `curl-config --cflags`
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__ \
+			`aarch64-none-elf-pkg-config --cflags sleepy_discord` \
+			`curl-config --cflags` \
+			`aarch64-none-elf-pkg-config --cflags libwslay`
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lnx -lm `aarch64-none-elf-pkg-config --libs sleepy_discord` `curl-config --libs`
+LIBS	:= -lnx -lm `aarch64-none-elf-pkg-config --libs sleepy_discord` \
+			`curl-config --libs` \
+			`aarch64-none-elf-pkg-config --libs libwslay`
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
