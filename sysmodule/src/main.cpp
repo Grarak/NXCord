@@ -41,6 +41,10 @@ void userAppInit(void) {
   if (R_FAILED(rc)) {
     fatalThrow(rc);
   }
+
+#ifdef APPLET
+  nxlinkStdio();
+#endif
 }
 
 void userAppExit(void) {
