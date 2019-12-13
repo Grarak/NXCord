@@ -23,7 +23,12 @@ DiscordClient::DiscordClient(const std::string &token) : _token(token) {
   start(_token);
 }
 
-DiscordClient::~DiscordClient() {}
+DiscordClient::~DiscordClient() {
+  if (!_wslay_event_context) {
+    wslay_event_context_free(_wslay_event_context);
+    _wslay_event_context = nullptr;
+  }
+}
 
 ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
                       int flags, void *user_data) {
