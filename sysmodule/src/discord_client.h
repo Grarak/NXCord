@@ -10,7 +10,7 @@ class DiscordClient : public SleepyDiscord::BaseDiscordClient {
   wslay_event_context_ptr _wslay_event_context = nullptr;
   wslay_event_callbacks _wslay_event_callbacks;
 
-  std::shared_ptr<MBedTLSWrapper> _mbedtls_wrapper;
+  std::unique_ptr<MBedTLSWrapper> _mbedtls_wrapper;
   bool _connected = false;
 
   time_t _previous_time = 0;

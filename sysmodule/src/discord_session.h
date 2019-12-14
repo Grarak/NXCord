@@ -18,7 +18,7 @@ class DiscordSession : public SleepyDiscord::GenericSession {
   void setMultipart(
       const std::initializer_list<SleepyDiscord::Part>& parts) override;
 
-  std::shared_ptr<MBedTLSWrapper> request(
+  std::unique_ptr<MBedTLSWrapper> request(
       const SleepyDiscord::RequestMethod method,
       SleepyDiscord::Response* response);
 

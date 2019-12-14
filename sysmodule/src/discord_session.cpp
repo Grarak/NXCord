@@ -35,7 +35,7 @@ bool DiscordSession::contains_header(const std::string& key) const {
 void DiscordSession::setMultipart(
     const std::initializer_list<SleepyDiscord::Part>& parts) {}
 
-std::shared_ptr<MBedTLSWrapper> DiscordSession::request(
+std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
     const SleepyDiscord::RequestMethod method,
     SleepyDiscord::Response* response) {
   printf("Requesting %s %s\n", _url.c_str(), METHOD_NAMES[method]);
@@ -57,7 +57,7 @@ std::shared_ptr<MBedTLSWrapper> DiscordSession::request(
     return nullptr;
   }
 
-  auto mbedtls_wrapper = std::make_shared<MBedTLSWrapper>(hostname);
+  auto mbedtls_wrapper = std::make_unique<MBedTLSWrapper>(hostname);
   if (!mbedtls_wrapper->usable()) {
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
     response->text =
@@ -140,8 +140,9 @@ std::shared_ptr<MBedTLSWrapper> DiscordSession::request(
 
   printf("Sending payload\n");
 
-  ret = mbedtls_wrapper->write((const unsigned char*)metadata.c_str(),
-                               metadata.size());
+  ret = mbedtls_wrapper->write(
+      reinterpret_cast<const unsigned char*>(metadata.c_str()),
+      metadata.size());
   if (ret < 0) {
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
     response->text = "{\"code\":431,\"message\":\"Write error " +
@@ -149,8 +150,8 @@ std::shared_ptr<MBedTLSWrapper> DiscordSession::request(
     return mbedtls_wrapper;
   }
   if (_body) {
-    ret = mbedtls_wrapper->write((const unsigned char*)_body->c_str(),
-                                 _body->size());
+    ret = mbedtls_wrapper->write(
+        reinterpret_cast<const unsigned char*>(_body->c_str()), _body->size());
     if (ret < 0) {
       response->statusCode = SleepyDiscord::GENERAL_ERROR;
       response->text = "{\"code\":431,\"message\":\"Write error " +

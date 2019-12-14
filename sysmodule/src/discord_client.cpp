@@ -34,11 +34,7 @@ DiscordClient::DiscordClient(const std::string &token) : _token(token) {
 }
 
 DiscordClient::~DiscordClient() {
-  if (!_wslay_event_context) {
-    wslay_event_context_free(_wslay_event_context);
-    _wslay_event_context = nullptr;
-  }
-
+  disconnect(0, "");
   csrngExit();
 }
 
@@ -133,7 +129,7 @@ bool DiscordClient::connect(const std::string &url) {
 
   printf("Request connection to websocket\n");
   SleepyDiscord::Response response;
-  _mbedtls_wrapper = session.request(SleepyDiscord::Get, &response);
+  _mbedtls_wrapper = std::move(session.request(SleepyDiscord::Get, &response));
 
   if (response.statusCode !=
       SleepyDiscord::SWITCHING_PROTOCOLS) {  // error check
@@ -163,8 +159,8 @@ bool DiscordClient::connect(const std::string &url) {
 }
 
 void DiscordClient::send(std::string message) {
-  struct wslay_event_msg msg = {1, (const uint8_t *)(message.c_str()),
-                                message.length()};
+  struct wslay_event_msg msg = {
+      1, reinterpret_cast<const uint8_t *>(message.c_str()), message.length()};
   const int returned = wslay_event_queue_msg(_wslay_event_context, &msg);
   if (returned != 0) {  // error
     printf("Send error: ");
@@ -185,7 +181,17 @@ void DiscordClient::send(std::string message) {
   }
 }
 
-void DiscordClient::disconnect(unsigned int code, const std::string reason) {}
+void DiscordClient::disconnect(unsigned int code, const std::string reason) {
+  printf("Disconnecting client %s\n", reason.c_str());
+  if (_wslay_event_context) {
+    wslay_event_queue_close(_wslay_event_context, code,
+                            reinterpret_cast<const uint8_t *>(reason.c_str()),
+                            reason.length());
+    wslay_event_send(_wslay_event_context);
+    wslay_event_context_free(_wslay_event_context);
+    _wslay_event_context = nullptr;
+  }
+}
 
 void DiscordClient::sleep(const unsigned int milliseconds) {
   svcSleepThread(1e6 * milliseconds);
