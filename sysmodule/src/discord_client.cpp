@@ -204,8 +204,16 @@ void DiscordClient::onError(SleepyDiscord::ErrorCode errorCode,
 
 SleepyDiscord::Timer DiscordClient::schedule(std::function<void()> code,
                                              const time_t milliseconds) {
-  _scheduled_functions.push_back(std::make_pair(std::move(code), milliseconds));
-  return SleepyDiscord::Timer([]() {});
+  size_t id = _schedule_counter++;
+  auto instance = this;
+  ScheduledFunction scheduled_function = {std::move(code), milliseconds, true};
+  _scheduled_functions[_schedule_counter] = scheduled_function;
+  return SleepyDiscord::Timer([instance, id]() {
+    auto it = instance->_scheduled_functions.find(id);
+    if (it != instance->_scheduled_functions.end()) {
+      it->second.enabled = false;
+    }
+  });
 }
 
 bool DiscordClient::pollSocket(int events) {
@@ -229,17 +237,24 @@ void DiscordClient::tick() {
   } else {
     time_t current_time = getEpochTimeMillisecond();
     time_t diff = current_time - _previous_time;
+
+    for (auto &pair : _scheduled_functions) {
+      if (pair.second.enabled) {
+        pair.second.scheduled_time -= diff;
+        if (pair.second.scheduled_time <= 0) {
+          pair.second.function();
+          pair.second.enabled = false;
+        }
+      }
+    }
+
+    // Remove disabled functions
     auto it = _scheduled_functions.begin();
-    size_t index = 0;
-    while (it + index != _scheduled_functions.end()) {
-      auto current = it + index;
-      current->second -= diff;
-      if (current->second <= 0) {
-        current->first();
-        it = _scheduled_functions.begin();
-        _scheduled_functions.erase(current);
+    while (it != _scheduled_functions.end()) {
+      if (!it->second.enabled) {
+        it = _scheduled_functions.erase(it);
       } else {
-        ++index;
+        ++it;
       }
     }
     _previous_time = current_time;

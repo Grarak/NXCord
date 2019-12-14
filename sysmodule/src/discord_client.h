@@ -13,8 +13,15 @@ class DiscordClient : public SleepyDiscord::BaseDiscordClient {
   std::unique_ptr<MBedTLSWrapper> _mbedtls_wrapper;
   bool _connected = false;
 
+  struct ScheduledFunction {
+    std::function<void()> function;
+    time_t scheduled_time;
+    bool enabled;
+  };
+
+  size_t _schedule_counter = 0;
   time_t _previous_time = 0;
-  std::vector<std::pair<std::function<void()>, time_t>> _scheduled_functions;
+  std::map<size_t, ScheduledFunction> _scheduled_functions;
 
   bool connect(const std::string &) override;
   void send(std::string) override;
