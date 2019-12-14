@@ -65,24 +65,26 @@ void MBedTLSWrapper::set_fd(int fd) {
       &_ssl, this,
       [](void* ctx, const unsigned char* buf, size_t len) {
         auto mbedtls_wrapper = static_cast<MBedTLSWrapper*>(ctx);
-        int size = send(mbedtls_wrapper->_fd, buf, len, 0);
-        if (size < 0) {
-          printf("Send error %d", size);
-          return -1;
+        int ret = send(mbedtls_wrapper->_fd, buf, len, 0);
+        if (ret < 0) {
+          printf("Send error %d\n", ret);
+          return ret;
         }
-        return size;
+        return ret;
       },
       [](void* ctx, unsigned char* buf, size_t len) {
         auto mbedtls_wrapper = static_cast<MBedTLSWrapper*>(ctx);
-        int size = recv(mbedtls_wrapper->_fd, buf, len, 0);
-        if (size < 0) {
-          printf("Receive error %d", size);
-          return -1;
+        int ret = recv(mbedtls_wrapper->_fd, buf, len, 0);
+        if (ret < 0) {
+          printf("Receive error %d\n", ret);
+          return ret;
         }
-        return size;
+        return ret;
       },
       nullptr);
 }
+
+int MBedTLSWrapper::get_fd() const { return _fd; }
 
 bool MBedTLSWrapper::start_ssl() {
   int ret = mbedtls_ssl_handshake(&_ssl);
@@ -93,15 +95,10 @@ bool MBedTLSWrapper::start_ssl() {
   return true;
 }
 
-bool MBedTLSWrapper::write(const char* data, size_t data_size) {
-  int ret = mbedtls_ssl_write(&_ssl, (const unsigned char*)data, data_size);
-  if (ret < 0) {
-    _error = get_mbedtls_error("mbedtls_ssl_write", ret);
-    return false;
-  }
-  return true;
+int MBedTLSWrapper::write(const unsigned char* data, size_t data_size) {
+  return mbedtls_ssl_write(&_ssl, data, data_size);
 }
 
-size_t MBedTLSWrapper::read(char* buf, size_t buf_size) {
-  return mbedtls_ssl_read(&_ssl, (unsigned char*)buf, buf_size);
+int MBedTLSWrapper::read(unsigned char* buf, size_t buf_size) {
+  return mbedtls_ssl_read(&_ssl, buf, buf_size);
 }

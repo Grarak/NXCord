@@ -26,7 +26,8 @@ class MBedTLSWrapper {
   std::string get_error() const;
 
   void set_fd(int fd);
+  int get_fd() const;
   bool start_ssl();
-  bool write(const char *data, size_t data_size);
-  size_t read(char *buf, size_t buf_size);
+  int write(const unsigned char *data, size_t data_size);
+  int read(unsigned char *buf, size_t buf_size);
 };

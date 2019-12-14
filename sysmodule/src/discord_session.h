@@ -9,6 +9,8 @@ class DiscordSession : public SleepyDiscord::GenericSession {
   const std::string* _body = nullptr;
   const std::vector<SleepyDiscord::HeaderPair>* _headers = nullptr;
 
+  bool contains_header(const std::string &key) const;
+
  public:
   void setUrl(const std::string& url) override;
   void setBody(const std::string* body) override;

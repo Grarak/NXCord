@@ -20,6 +20,18 @@ void DiscordSession::setHeader(
   _headers = &header;
 }
 
+bool DiscordSession::contains_header(const std::string& key) const {
+  if (!_headers) {
+    return false;
+  }
+  for (const SleepyDiscord::HeaderPair& pair : *_headers) {
+    if (pair.name == key) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void DiscordSession::setMultipart(
     const std::initializer_list<SleepyDiscord::Part>& parts) {}
 
@@ -28,6 +40,7 @@ std::shared_ptr<MBedTLSWrapper> DiscordSession::request(
     SleepyDiscord::Response* response) {
   printf("Requesting %s %s\n", _url.c_str(), METHOD_NAMES[method]);
 
+  int ret;
   std::string hostname, path;
   std::string protocol = _url.substr(0, _url.find("://"));
   size_t offset = protocol.length() + 3;
@@ -103,12 +116,13 @@ std::shared_ptr<MBedTLSWrapper> DiscordSession::request(
 
   std::string metadata = METHOD_NAMES[method];
   metadata.append(" ").append(path).append(" HTTP/1.1").append(NEW_LINE);
-  metadata.append("Host: ").append(hostname).append(NEW_LINE);
-  metadata.append("Accept: */*").append(NEW_LINE);
-  metadata.append("Connection: close").append(NEW_LINE);
+  metadata.append("Host: ").append(hostname).append(":443").append(NEW_LINE);
 
-  if (_body) {
-    metadata.append("Content-Length: ").append(std::to_string(_body->size()));
+  if (!contains_header("Accept")) {
+    metadata.append("Accept: */*").append(NEW_LINE);
+  }
+  if (!contains_header("Connection")) {
+    metadata.append("Connection: close").append(NEW_LINE);
   }
 
   if (_headers) {
@@ -119,44 +133,52 @@ std::shared_ptr<MBedTLSWrapper> DiscordSession::request(
           .append(NEW_LINE);
     }
   }
+  if (_body) {
+    metadata.append("Content-Length: ").append(std::to_string(_body->size()));
+  }
   metadata.append(NEW_LINE);
 
   printf("Sending payload\n");
-  if (!mbedtls_wrapper->write(metadata.c_str(), metadata.size())) {
+
+  ret = mbedtls_wrapper->write((const unsigned char*)metadata.c_str(),
+                               metadata.size());
+  if (ret < 0) {
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
-    response->text =
-        "{\"code\":431,\"message\":\"" + mbedtls_wrapper->get_error() + "\"}";
+    response->text = "{\"code\":431,\"message\":\"Write error " +
+                     std::to_string(ret) + "\"}";
     return mbedtls_wrapper;
   }
   if (_body) {
-    if (!mbedtls_wrapper->write(_body->c_str(), _body->size())) {
+    ret = mbedtls_wrapper->write((const unsigned char*)_body->c_str(),
+                                 _body->size());
+    if (ret < 0) {
       response->statusCode = SleepyDiscord::GENERAL_ERROR;
-      response->text =
-          "{\"code\":431,\"message\":\"" + mbedtls_wrapper->get_error() + "\"}";
+      response->text = "{\"code\":431,\"message\":\"Write error " +
+                       std::to_string(ret) + "\"}";
       return mbedtls_wrapper;
     }
   }
 
   printf("Reading response\n");
   size_t buf_size = 1024;
-  char buf[buf_size];
+  unsigned char buf[buf_size];
   bool collect_headers = true;
   std::string header_buf;
-  size_t ret;
-  while ((ret = mbedtls_wrapper->read(buf, buf_size)) > 0) {
-    buf[ret] = 0;
+  size_t read_len;
+  while ((read_len = mbedtls_wrapper->read(buf, buf_size)) > 0) {
+    buf[read_len] = 0;
 
     if (collect_headers) {
       size_t header_start = 0;
       size_t header_end = 0;
 
-      for (; header_end < ret; ++header_end) {
+      for (; header_end < read_len; ++header_end) {
         if (buf[header_end] == '\r') {
           if (header_buf.empty() && header_start == header_end) {
             collect_headers = false;
-            if (header_end + 2 < ret) {
+            if (header_end + 2 < read_len) {
               response->text.insert(response->text.end(), buf + header_end + 2,
-                                    buf + ret);
+                                    buf + read_len);
             }
             break;
           }
@@ -193,16 +215,15 @@ std::shared_ptr<MBedTLSWrapper> DiscordSession::request(
                           buf + header_end);
       }
     } else {
-      response->text.insert(response->text.end(), buf,
-                            buf + ret);  // TODO use content length if possible
+      response->text.insert(
+          response->text.end(), buf,
+          buf + read_len);  // TODO use content length if possible
     }
 
-    if (ret < buf_size) {
+    if (read_len < buf_size) {
       break;
     }
   }
-
-  printf("Closing connection to %s\n", hostname.c_str());
 
   _body = nullptr;
   _headers = nullptr;

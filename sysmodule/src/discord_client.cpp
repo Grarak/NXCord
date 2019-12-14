@@ -1,8 +1,13 @@
+#include <fcntl.h>
+#include <poll.h>
 #include <switch.h>
+#include <switch/crypto/sha1.h>
 
 #include "base64.h"
 #include "discord_client.h"
 #include "discord_session.h"
+
+#define WS_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
                       int flags, void *user_data);
@@ -20,7 +25,12 @@ DiscordClient::DiscordClient(const std::string &token) : _token(token) {
       NULL,          NULL,          on_msg_recv_callback,
   };
 
-  start(_token);
+  if (R_FAILED(csrngInitialize())) {
+    printf("Failed to initialize csrng\n");
+    return;
+  }
+
+  start(_token, 1);
 }
 
 DiscordClient::~DiscordClient() {
@@ -28,26 +38,72 @@ DiscordClient::~DiscordClient() {
     wslay_event_context_free(_wslay_event_context);
     _wslay_event_context = nullptr;
   }
+
+  csrngExit();
 }
 
 ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
                       int flags, void *user_data) {
-  return 0;
+  DiscordClient *discord_client = static_cast<DiscordClient *>(user_data);
+
+  int ret = discord_client->_mbedtls_wrapper->read(buf, len);
+  if (ret <= 0) {
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+      errno = EWOULDBLOCK;
+      wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
+    } else {
+      wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+    }
+
+    printf("Read fail: %d\n", ret);
+    return -1;
+  }
+  return ret;
 }
 
 ssize_t send_callback(wslay_event_context_ptr ctx, const uint8_t *data,
                       size_t len, int flags, void *user_data) {
-  return 0;
+  DiscordClient *discord_client = static_cast<DiscordClient *>(user_data);
+
+  int ret = discord_client->_mbedtls_wrapper->write(data, len);
+  if (ret == -1) {
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+      errno = EWOULDBLOCK;
+      wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
+    } else {
+      wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+    }
+
+    printf("Write fail: %d\n", ret);
+    return -1;
+  }
+  return ret;
 }
 
 int genmask_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
                      void *user_data) {
+  if (R_FAILED(csrngGetRandomBytes(buf, len))) {
+    printf("Failed to generate random bytes\n");
+    return -1;
+  }
   return 0;
 }
 
 void on_msg_recv_callback(wslay_event_context_ptr ctx,
                           const struct wslay_event_on_msg_recv_arg *arg,
-                          void *user_data) {}
+                          void *user_data) {
+  DiscordClient *discord_client = static_cast<DiscordClient *>(user_data);
+  discord_client->processMessage(
+      std::string(reinterpret_cast<const char *>(arg->msg)));
+}
+
+std::string create_acceptkey(const std::string &clientkey) {
+  std::string s = clientkey + WS_GUID;
+  unsigned char sha1[SHA1_HASH_SIZE];
+  memset(sha1, 0, SHA1_HASH_SIZE);
+  sha1CalculateHash(sha1, s.c_str(), s.size());
+  return base64_encode(sha1, SHA1_HASH_SIZE);
+}
 
 bool DiscordClient::connect(const std::string &url) {
   if (!_wslay_event_context) {
@@ -58,18 +114,12 @@ bool DiscordClient::connect(const std::string &url) {
   unsigned char random_bytes[16];
 
   printf("Generating random key\n");
-  if (R_FAILED(csrngInitialize())) {
-    printf("Failed to initialize csrng\n");
-    return false;
-  }
-
   if (R_FAILED(csrngGetRandomBytes(random_bytes, 16))) {
     printf("Failed to generate random bytes\n");
-    csrngExit();
     return false;
   }
 
-  std::string random_key = base64_encode(random_bytes, 16);
+  std::string client_key = base64_encode(random_bytes, 16);
 
   DiscordSession session;
   session.setUrl(url);
@@ -77,11 +127,11 @@ bool DiscordClient::connect(const std::string &url) {
   std::vector<SleepyDiscord::HeaderPair> header = {
       {"Upgrade", "websocket"},
       {"Connection", "Upgrade"},
-      {"Sec-WebSocket-Key", random_key},
+      {"Sec-WebSocket-Key", client_key},
       {"Sec-WebSocket-Version", "13"}};
   session.setHeader(header);
 
-  printf("Request conenction to websocket\n");
+  printf("Request connection to websocket\n");
   SleepyDiscord::Response response;
   _mbedtls_wrapper = session.request(SleepyDiscord::Get, &response);
 
@@ -91,8 +141,113 @@ bool DiscordClient::connect(const std::string &url) {
     return false;
   }
 
+  auto it = response.header.find("sec-websocket-accept");
+  if (it == response.header.end()) {
+    printf("Couldn't parse sec-websocket-accept\n");
+    return false;
+  }
+
+  std::string accept_key = create_acceptkey(client_key);
+  if (it->second != accept_key) {
+    printf("Accept key is invalid\n");
+    return false;
+  }
+
+  // Make fd non blocking
+  int status = fcntl(_mbedtls_wrapper->get_fd(), F_GETFL);
+  fcntl(_mbedtls_wrapper->get_fd(), F_SETFL, status | O_NONBLOCK);
+
   printf("Connection to websocket established\n");
+  _connected = true;
   return true;
 }
 
-void DiscordClient::tick() {}
+void DiscordClient::send(std::string message) {
+  struct wslay_event_msg msg = {1, (const uint8_t *)(message.c_str()),
+                                message.length()};
+  const int returned = wslay_event_queue_msg(_wslay_event_context, &msg);
+  if (returned != 0) {  // error
+    printf("Send error: ");
+    switch (returned) {
+      case WSLAY_ERR_NO_MORE_MSG:
+        printf("Could not queue given message\n");
+        break;
+      case WSLAY_ERR_INVALID_ARGUMENT:
+        printf("The given message is invalid\n");
+        break;
+      case WSLAY_ERR_NOMEM:
+        printf("Out of memory\n");
+        break;
+      default:
+        printf("unknown\n");
+        break;
+    }
+  }
+}
+
+void DiscordClient::disconnect(unsigned int code, const std::string reason) {}
+
+void DiscordClient::sleep(const unsigned int milliseconds) {
+  svcSleepThread(1e6 * milliseconds);
+}
+
+void DiscordClient::onError(SleepyDiscord::ErrorCode errorCode,
+                            const std::string errorMessage) {
+  printf("Error %i: %s\n", errorCode, errorMessage.c_str());
+}
+
+SleepyDiscord::Timer DiscordClient::schedule(std::function<void()> code,
+                                             const time_t milliseconds) {
+  _scheduled_functions.push_back(std::make_pair(std::move(code), milliseconds));
+  return SleepyDiscord::Timer([]() {});
+}
+
+bool DiscordClient::pollSocket(int events) {
+  pollfd pol;
+  pol.fd = _mbedtls_wrapper->get_fd();
+  pol.events = events;
+
+  if (poll(&pol, 1, 0) == 1) {
+    return pol.revents & events;
+  }
+  return false;
+}
+
+void DiscordClient::tick() {
+  if (!_connected) {
+    return;
+  }
+
+  if (_previous_time == 0) {
+    _previous_time = getEpochTimeMillisecond();
+  } else {
+    time_t current_time = getEpochTimeMillisecond();
+    time_t diff = current_time - _previous_time;
+    auto it = _scheduled_functions.begin();
+    size_t index = 0;
+    while (it + index != _scheduled_functions.end()) {
+      auto current = it + index;
+      current->second -= diff;
+      if (current->second <= 0) {
+        current->first();
+        it = _scheduled_functions.begin();
+        _scheduled_functions.erase(current);
+      } else {
+        ++index;
+      }
+    }
+    _previous_time = current_time;
+  }
+
+  if (pollSocket(POLLIN) && wslay_event_want_read(_wslay_event_context)) {
+    printf("Wslay Receive\n");
+    if (wslay_event_recv(_wslay_event_context)) {
+      return;
+    }
+  }
+
+  if (pollSocket(POLLOUT) && wslay_event_want_write(_wslay_event_context)) {
+    printf("Wslay Send\n");
+    wslay_event_send(_wslay_event_context);
+  }
+}
