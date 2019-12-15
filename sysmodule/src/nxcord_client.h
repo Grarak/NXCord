@@ -3,7 +3,8 @@
 
 class NXCordClient : public DiscordClient {
  private:
-  void onReady(std::string* jsonMessage) override;
+  void onReady(SleepyDiscord::Ready readyData) override;
+  void onMessage(SleepyDiscord::Message message) override;
 
  public:
   NXCordClient(const std::string& token);

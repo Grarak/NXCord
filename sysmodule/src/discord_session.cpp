@@ -33,9 +33,6 @@ bool DiscordSession::contains_header(const std::string& key) const {
   return false;
 }
 
-void DiscordSession::setMultipart(
-    const std::initializer_list<SleepyDiscord::Part>& parts) {}
-
 std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
     const SleepyDiscord::RequestMethod method,
     SleepyDiscord::Response* response) {
@@ -265,26 +262,9 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   return mbedtls_wrapper;
 }
 
-SleepyDiscord::Response DiscordSession::Post() {
+SleepyDiscord::Response DiscordSession::request(
+    SleepyDiscord::RequestMethod method) {
   SleepyDiscord::Response response;
-  request(SleepyDiscord::Post, &response);
+  request(method, &response);
   return response;
-}
-
-SleepyDiscord::Response DiscordSession::Patch() {
-  return {SleepyDiscord::BAD_REQUEST, "", {}};
-}
-
-SleepyDiscord::Response DiscordSession::Delete() {
-  return {SleepyDiscord::BAD_REQUEST, "", {}};
-}
-
-SleepyDiscord::Response DiscordSession::Get() {
-  SleepyDiscord::Response response;
-  request(SleepyDiscord::Get, &response);
-  return response;
-}
-
-SleepyDiscord::Response DiscordSession::Put() {
-  return {SleepyDiscord::BAD_REQUEST, "", {}};
 }
