@@ -1,6 +1,7 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <zlib.h>
 
 #include "discord_session.h"
 
@@ -115,7 +116,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   }
 
   std::string metadata = METHOD_NAMES[method];
-  metadata.append(" ").append(path).append(" HTTP/1.1").append(NEW_LINE);
+  metadata.append(" ").append(path).append(" HTTP/1.0").append(NEW_LINE);
   metadata.append("Host: ").append(hostname).append(":443").append(NEW_LINE);
 
   if (!contains_header("Accept")) {
@@ -123,6 +124,9 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   }
   if (!contains_header("Connection")) {
     metadata.append("Connection: close").append(NEW_LINE);
+  }
+  if (!contains_header("Accept-Encoding")) {
+    metadata.append("Accept-Encoding: gzip").append(NEW_LINE);
   }
 
   if (_headers) {
@@ -133,7 +137,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
           .append(NEW_LINE);
     }
   }
-  if (_body) {
+  if (_body && !contains_header("Content-Length")) {
     metadata.append("Content-Length: ").append(std::to_string(_body->size()));
   }
   metadata.append(NEW_LINE);
@@ -161,17 +165,17 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   }
 
   printf("Reading response\n");
-  size_t buf_size = 1024;
+  int buf_size = 4096;
   unsigned char buf[buf_size];
   bool collect_headers = true;
   std::string header_buf;
-  size_t read_len;
+  int read_len;
   while ((read_len = mbedtls_wrapper->read(buf, buf_size)) > 0) {
     buf[read_len] = 0;
 
     if (collect_headers) {
-      size_t header_start = 0;
-      size_t header_end = 0;
+      int header_start = 0;
+      int header_end = 0;
 
       for (; header_end < read_len; ++header_end) {
         if (buf[header_end] == '\r') {
@@ -224,6 +228,36 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
     if (read_len < buf_size) {
       break;
     }
+  }
+
+  auto it = response->header.find("Content-Encoding");
+  if (it != response->header.end() && it->second == "gzip") {
+    std::string decompressed;
+    z_stream infstream;
+    infstream.zalloc = Z_NULL;
+    infstream.zfree = Z_NULL;
+    infstream.avail_in = response->text.size();  // size of input + 1 for
+    infstream.next_in = (Bytef*)response->text.c_str();
+
+    inflateInit2(&infstream, (16 + MAX_WBITS));
+    while (true) {
+      infstream.avail_out = buf_size;
+      infstream.next_out = (Bytef*)buf;
+      infstream.total_out = 0;
+
+      ret = inflate(&infstream, Z_SYNC_FLUSH);
+      decompressed.insert(decompressed.end(), buf, buf + infstream.total_out);
+
+      if (ret == Z_STREAM_END) {
+        break;
+      } else if (ret != Z_OK) {
+        response->text =
+            "{\"code\":431,\"message\":\"Couldn't decompress body\"}";
+        return mbedtls_wrapper;
+      }
+    }
+    inflateEnd(&infstream);
+    response->text = std::move(decompressed);
   }
 
   _body = nullptr;
