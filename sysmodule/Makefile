@@ -55,7 +55,6 @@ CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__ \
 			`aarch64-none-elf-pkg-config --cflags sleepy_discord` \
-			`curl-config --cflags` \
 			`aarch64-none-elf-pkg-config --cflags libwslay` \
 			`aarch64-none-elf-pkg-config --cflags zlib`
 
@@ -65,7 +64,7 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:= -lnx -lm `aarch64-none-elf-pkg-config --libs sleepy_discord` \
-			`curl-config --libs` \
+			-lmbedtls -lmbedx509 -lmbedcrypto \
 			`aarch64-none-elf-pkg-config --libs libwslay` \
 			`aarch64-none-elf-pkg-config --libs zlib`
 
