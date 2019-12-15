@@ -1,7 +1,7 @@
 #include <curl/curl.h>
 #include <switch.h>
 
-#include "discord_client.h"
+#include "nxcord_client.h"
 
 extern "C" {
 #ifndef APPLET
@@ -42,12 +42,18 @@ void userAppInit(void) {
     fatalThrow(rc);
   }
 
+  rc = csrngInitialize();
+  if (R_FAILED(rc)) {
+    fatalThrow(rc);
+  }
+
 #ifdef APPLET
   nxlinkStdio();
 #endif
 }
 
 void userAppExit(void) {
+  csrngExit();
   socketExit();
   smExit();
 }
@@ -66,7 +72,7 @@ int main(int argc, char **argv) {
   consoleInit(NULL);
 #endif
 
-  DiscordClient client(TOKEN);
+  NXCordClient client(TOKEN);
 
   while (appletMainLoop()) {
     client.tick();

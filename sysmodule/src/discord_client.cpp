@@ -25,18 +25,10 @@ DiscordClient::DiscordClient(const std::string &token) : _token(token) {
       NULL,          NULL,          on_msg_recv_callback,
   };
 
-  if (R_FAILED(csrngInitialize())) {
-    printf("Failed to initialize csrng\n");
-    return;
-  }
-
   start(_token, 1);
 }
 
-DiscordClient::~DiscordClient() {
-  disconnect(0, "");
-  csrngExit();
-}
+DiscordClient::~DiscordClient() { disconnect(0, ""); }
 
 ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
                       int flags, void *user_data) {
@@ -96,7 +88,6 @@ void on_msg_recv_callback(wslay_event_context_ptr ctx,
 std::string create_acceptkey(const std::string &clientkey) {
   std::string s = clientkey + WS_GUID;
   unsigned char sha1[SHA1_HASH_SIZE];
-  memset(sha1, 0, SHA1_HASH_SIZE);
   sha1CalculateHash(sha1, s.c_str(), s.size());
   return base64_encode(sha1, SHA1_HASH_SIZE);
 }
