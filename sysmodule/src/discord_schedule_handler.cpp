@@ -2,21 +2,17 @@
 
 #include "discord_schedule_handler.h"
 
-const time_t getEpochTimeMillisecond() {
-  auto ms = std::chrono::time_point_cast<std::chrono::milliseconds>(
-      std::chrono::steady_clock::now());
-  return ms.time_since_epoch().count();
-}
+DiscordScheduleHandler::DiscordScheduleHandler(DiscordClient* client)
+    : _client(client) {}
 
 SleepyDiscord::Timer DiscordScheduleHandler::schedule(
     SleepyDiscord::TimedTask code, const time_t milliseconds) {
   size_t id = _schedule_counter++;
-  auto instance = this;
   ScheduledFunction scheduled_function = {std::move(code), milliseconds, true};
   _scheduled_functions[_schedule_counter] = scheduled_function;
-  return SleepyDiscord::Timer([instance, id]() {
-    auto it = instance->_scheduled_functions.find(id);
-    if (it != instance->_scheduled_functions.end()) {
+  return SleepyDiscord::Timer([this, id]() {
+    auto it = this->_scheduled_functions.find(id);
+    if (it != this->_scheduled_functions.end()) {
       it->second.enabled = false;
     }
   });
@@ -24,12 +20,11 @@ SleepyDiscord::Timer DiscordScheduleHandler::schedule(
 
 void DiscordScheduleHandler::tick() {
   if (_previous_time == 0) {
-    _previous_time = getEpochTimeMillisecond();
+    _previous_time = _client->getEpochTimeMillisecond();
   } else {
-    time_t current_time = getEpochTimeMillisecond();
+    time_t current_time = _client->getEpochTimeMillisecond();
     time_t diff = current_time - _previous_time;
-
-    for (auto &pair : _scheduled_functions) {
+    for (auto& pair : _scheduled_functions) {
       if (pair.second.enabled) {
         pair.second.scheduled_time -= diff;
         if (pair.second.scheduled_time <= 0) {

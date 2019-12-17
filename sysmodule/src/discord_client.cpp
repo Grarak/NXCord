@@ -10,7 +10,7 @@
 #define WS_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 DiscordClient::DiscordClient(const std::string &token) : _token(token) {
-  setScheduleHandler<DiscordScheduleHandler>();
+  setScheduleHandler<DiscordScheduleHandler>(this);
   start(_token, 1);
 }
 
@@ -106,6 +106,12 @@ void DiscordClient::send(std::string message,
 void DiscordClient::disconnect(unsigned int code, const std::string reason,
                                SleepyDiscord::WebsocketConnection &connection) {
   printf("Disconnecting client %s\n", reason.c_str());
+  for (auto &voice_connection : voiceConnections) {
+    auto voice_websocket =
+        std::static_pointer_cast<DiscordWebsocket>(voice_connection.connection);
+    voice_websocket->tick();
+  }
+  voiceConnections.clear();
   auto discord_websocket =
       std::static_pointer_cast<DiscordWebsocket>(connection);
   discord_websocket->disconnect(code, reason);
@@ -132,4 +138,10 @@ void DiscordClient::tick() {
   auto discord_websocket =
       std::static_pointer_cast<DiscordWebsocket>(connection);
   discord_websocket->tick();
+
+  for (auto &voice_connection : voiceConnections) {
+    auto voice_websocket =
+        std::static_pointer_cast<DiscordWebsocket>(voice_connection.connection);
+    voice_websocket->tick();
+  }
 }

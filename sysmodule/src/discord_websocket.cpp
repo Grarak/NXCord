@@ -54,7 +54,7 @@ int genmask_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
 }
 
 void on_msg_recv_callback(wslay_event_context_ptr ctx,
-                          const struct wslay_event_on_msg_recv_arg *arg,
+                          const wslay_event_on_msg_recv_arg *arg,
                           void *user_data) {
   DiscordWebsocket *discord_websocket =
       static_cast<DiscordWebsocket *>(user_data);
@@ -84,8 +84,8 @@ DiscordWebsocket::DiscordWebsocket(
 DiscordWebsocket::~DiscordWebsocket() { disconnect(0, ""); }
 
 int DiscordWebsocket::queue_message(const std::string &message) {
-  struct wslay_event_msg msg = {
-      1, reinterpret_cast<const uint8_t *>(message.c_str()), message.size()};
+  wslay_event_msg msg = {1, reinterpret_cast<const uint8_t *>(message.c_str()),
+                         message.size()};
   return wslay_event_queue_msg(_wslay_event_context, &msg);
 }
 

@@ -3,8 +3,12 @@
 
 #include <map>
 
+#include "discord_client.h"
+
 class DiscordScheduleHandler : public SleepyDiscord::GenericScheduleHandler {
  private:
+  DiscordClient* _client;
+
   struct ScheduledFunction {
     SleepyDiscord::TimedTask function;
     time_t scheduled_time;
@@ -16,6 +20,7 @@ class DiscordScheduleHandler : public SleepyDiscord::GenericScheduleHandler {
   std::map<size_t, ScheduledFunction> _scheduled_functions;
 
  public:
+  DiscordScheduleHandler(DiscordClient* client);
   SleepyDiscord::Timer schedule(SleepyDiscord::TimedTask code,
                                 const time_t milliseconds) override;
 

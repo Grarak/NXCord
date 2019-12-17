@@ -23,9 +23,9 @@ class DiscordWebsocket : public SleepyDiscord::GenericWebsocketConnection {
                                size_t len, int flags, void *user_data);
   friend int genmask_callback(wslay_event_context_ptr ctx, uint8_t *buf,
                               size_t len, void *user_data);
-  friend void on_msg_recv_callback(
-      wslay_event_context_ptr ctx,
-      const struct wslay_event_on_msg_recv_arg *arg, void *user_data);
+  friend void on_msg_recv_callback(wslay_event_context_ptr ctx,
+                                   const wslay_event_on_msg_recv_arg *arg,
+                                   void *user_data);
 
  public:
   DiscordWebsocket(SleepyDiscord::GenericMessageReceiver *message_processor,

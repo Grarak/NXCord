@@ -63,31 +63,31 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
     return mbedtls_wrapper;
   }
 
-  struct addrinfo hints {};
-  int r, fd;
-  memset(&hints, 0, sizeof(struct addrinfo));
+  addrinfo hints;
+  int fd;
+  memset(&hints, 0, sizeof(addrinfo));
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
-  struct addrinfo* res;
+  addrinfo* res;
 
   printf("Connecting to %s\n", hostname.c_str());
-  r = getaddrinfo(hostname.c_str(), "443", &hints, &res);
-  if (r != 0) {
+  ret = getaddrinfo(hostname.c_str(), "443", &hints, &res);
+  if (ret != 0) {
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
     response->text = "{\"code\":0,\"message\":\"getaddrinfo: " +
-                     std::string(gai_strerror(r)) + "\"}";
+                     std::string(gai_strerror(ret)) + "\"}";
     return mbedtls_wrapper;
   }
 
-  for (struct addrinfo* rp = res; rp; rp = rp->ai_next) {
+  for (addrinfo* rp = res; rp; rp = rp->ai_next) {
     fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
     if (fd == -1) {
       continue;
     }
-    while ((r = connect(fd, rp->ai_addr, rp->ai_addrlen)) == -1 &&
+    while ((ret = connect(fd, rp->ai_addr, rp->ai_addrlen)) == -1 &&
            errno == EINTR)
       ;
-    if (r == 0) {
+    if (ret == 0) {
       break;
     }
     close(fd);

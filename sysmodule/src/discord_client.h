@@ -1,6 +1,7 @@
 #pragma once
 #include <sleepy_discord/sleepy_discord.h>
 
+class DiscordScheduleHandler;
 class DiscordClient : public SleepyDiscord::BaseDiscordClient {
  private:
   std::string _token;
@@ -13,6 +14,8 @@ class DiscordClient : public SleepyDiscord::BaseDiscordClient {
   void onError(SleepyDiscord::ErrorCode, const std::string) override;
   SleepyDiscord::Timer schedule(SleepyDiscord::TimedTask code,
                                 const time_t milliseconds) override;
+
+  friend DiscordScheduleHandler;
 
  public:
   DiscordClient(const std::string &token);

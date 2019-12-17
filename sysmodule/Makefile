@@ -55,6 +55,7 @@ CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__ \
 			`aarch64-none-elf-pkg-config --cflags sleepy_discord` \
+			-DSLEEPY_VOICE_ENABLED \
 			`aarch64-none-elf-pkg-config --cflags libwslay` \
 			`aarch64-none-elf-pkg-config --cflags zlib`
 
