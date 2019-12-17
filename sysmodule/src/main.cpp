@@ -53,6 +53,7 @@ void userAppInit(void) {
 }
 
 void userAppExit(void) {
+  printf("Closing services\n");
   csrngExit();
   socketExit();
   smExit();
@@ -91,6 +92,7 @@ int main(int argc, char **argv) {
 #ifdef APPLET
   consoleExit(NULL);
 #endif
+  userAppExit();
 
   return 0;
 }
