@@ -8,9 +8,9 @@ Currently WIP and not really usable for regular people. Also Discord's TOS forbi
 | Websocket       | Yes       | 100%                    |
 | Receive content | Yes       | 100%                    |
 | Send content    | No        | 50% - API done. No GUI. |
-| UDP connection  | No        | 0%                      |
+| UDP connection  | Yes       | 100%                    |
 | Receive voice   | No        | 0%                      |
-| Send voice      | No        | 0%                      |
+| Send voice      | No        | 50% - Need some input   |
 
 ## Build
 For build you need to install a few dependencies first.
