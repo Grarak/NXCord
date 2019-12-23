@@ -1,15 +1,22 @@
+#include <poll.h>
+#include <switch.h>
+
 #include "discord_udp_client.h"
 
 SleepyDiscord::CustomInitUDPClient SleepyDiscord::CustomUDPClient::init =
     []() -> SleepyDiscord::GenericUDPClient * { return new DiscordUDPClient; };
 
 bool DiscordUDPClient::connect(const std::string &to, const uint16_t port) {
+  if (_fd >= 0) {
+    close(_fd);
+  }
+
   if ((_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
     perror("Socket creation failed");
     return false;
   }
 
-  printf("UDP Conneting to %s:%d %d\n", to.c_str(), port, _fd);
+  printf("UDP Connecting to %s:%d %d\n", to.c_str(), port, _fd);
 
   memset(&_servaddr, 0, sizeof(_servaddr));
   _servaddr.sin_family = AF_INET;
@@ -27,9 +34,13 @@ void DiscordUDPClient::send(const uint8_t *buffer, size_t buffer_length,
 }
 
 void DiscordUDPClient::receive(ReceiveHandler handler) {
-  size_t buf_size = 1024;
+  size_t buf_size = 1920;
   uint8_t buf[buf_size];
   socklen_t len;
+
+  if (_first_read) {
+    printf("UDP read blocking\n");
+  }
   int read = recvfrom(
       _fd, buf, buf_size,
       _first_read ? MSG_WAITALL
@@ -37,12 +48,15 @@ void DiscordUDPClient::receive(ReceiveHandler handler) {
                                    // address, block here, otherwise we miss it
       reinterpret_cast<sockaddr *>(&_servaddr), &len);
   _first_read = false;
-  handler(std::vector<uint8_t>(buf, buf + read));
+  if (read > 0) {
+    handler(std::vector<uint8_t>(buf, buf + read));
+  }
 }
 
 DiscordUDPClient::~DiscordUDPClient() {
   if (_fd >= 0) {
-    printf("Closing connection to %d\n", _fd);
+    printf("UDP Closing connection to %d\n", _fd);
+    shutdown(_fd, SHUT_WR);
     close(_fd);
   }
 }

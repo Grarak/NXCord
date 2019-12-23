@@ -1,6 +1,9 @@
 #include <fcntl.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <poll.h>
 #include <switch.h>
+#include <sys/socket.h>
 
 #include "discord_websocket.h"
 
@@ -10,15 +13,17 @@ ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
       static_cast<DiscordWebsocket *>(user_data);
 
   int ret = discord_websocket->_mbedtls_wrapper->read(buf, len);
-  if (ret <= 0) {
+  if (ret == -1) {
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
       errno = EWOULDBLOCK;
       wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
     } else {
+      printf("Read fail: %d\n", ret);
       wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
     }
-
-    printf("Read fail: %d\n", ret);
+    return -1;
+  } else if (ret == 0) {
+    wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
     return -1;
   }
   return ret;
@@ -35,10 +40,9 @@ ssize_t send_callback(wslay_event_context_ptr ctx, const uint8_t *data,
       errno = EWOULDBLOCK;
       wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
     } else {
+      printf("Write fail: %d\n", ret);
       wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
     }
-
-    printf("Write fail: %d\n", ret);
     return -1;
   }
   return ret;
@@ -59,6 +63,8 @@ void on_msg_recv_callback(wslay_event_context_ptr ctx,
   DiscordWebsocket *discord_websocket =
       static_cast<DiscordWebsocket *>(user_data);
   const char *msg = reinterpret_cast<const char *>(arg->msg);
+  printf("Receive %lu %s\n", arg->msg_length,
+         std::string(msg, msg + arg->msg_length).c_str());
   discord_websocket->_message_processor->processMessage(
       std::string(msg, msg + arg->msg_length));
 }
@@ -72,6 +78,12 @@ DiscordWebsocket::DiscordWebsocket(
   int status = fcntl(_mbedtls_wrapper->get_fd(), F_GETFL);
   fcntl(_mbedtls_wrapper->get_fd(), F_SETFL, status | O_NONBLOCK);
 
+  int val = 1;
+  if (setsockopt(_mbedtls_wrapper->get_fd(), IPPROTO_TCP, TCP_NODELAY, &val,
+                 (socklen_t)sizeof(val)) == -1) {
+    printf("Failed setsockopt: TCP_NODELAY");
+  }
+
   _wslay_event_callbacks = {
       recv_callback, send_callback, genmask_callback,     NULL,
       NULL,          NULL,          on_msg_recv_callback,
@@ -81,11 +93,12 @@ DiscordWebsocket::DiscordWebsocket(
                                   &_wslay_event_callbacks, this);
 }
 
-DiscordWebsocket::~DiscordWebsocket() { disconnect(0, ""); }
+DiscordWebsocket::~DiscordWebsocket() { disconnect(1000, ""); }
 
 int DiscordWebsocket::queue_message(const std::string &message) {
   wslay_event_msg msg = {1, reinterpret_cast<const uint8_t *>(message.c_str()),
                          message.size()};
+  printf("Send %s\n", message.c_str());
   return wslay_event_queue_msg(_wslay_event_context, &msg);
 }
 
@@ -112,15 +125,16 @@ bool DiscordWebsocket::pollSocket(int events) {
 }
 
 void DiscordWebsocket::tick() {
-  if (pollSocket(POLLIN) && wslay_event_want_read(_wslay_event_context)) {
-    printf("Wslay Receive\n");
-    if (wslay_event_recv(_wslay_event_context)) {
-      return;
+  int ret;
+  if (wslay_event_want_read(_wslay_event_context) && pollSocket(POLLIN)) {
+    if ((ret = wslay_event_recv(_wslay_event_context)) != 0) {
+      printf("Wslay read failed %d\n", ret);
     }
   }
 
-  if (pollSocket(POLLOUT) && wslay_event_want_write(_wslay_event_context)) {
-    printf("Wslay Send\n");
-    wslay_event_send(_wslay_event_context);
+  if (wslay_event_want_write(_wslay_event_context) && pollSocket(POLLOUT)) {
+    if ((ret = wslay_event_send(_wslay_event_context)) != 0) {
+      printf("Wslay write failed %d\n", ret);
+    }
   }
 }

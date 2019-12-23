@@ -16,7 +16,7 @@ class DiscordUDPClient : public SleepyDiscord::GenericUDPClient {
   bool _first_read = true;
 
  public:
-  ~DiscordUDPClient();
+  ~DiscordUDPClient() override;
 
   bool connect(const std::string& to, const uint16_t port) override;
   void send(

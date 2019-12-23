@@ -8,7 +8,8 @@ DiscordScheduleHandler::DiscordScheduleHandler(DiscordClient* client)
 SleepyDiscord::Timer DiscordScheduleHandler::schedule(
     SleepyDiscord::TimedTask code, const time_t milliseconds) {
   size_t id = _schedule_counter++;
-  ScheduledFunction scheduled_function = {std::move(code), milliseconds, true};
+  ScheduledFunction scheduled_function = {
+      std::move(code), milliseconds, _client->getEpochTimeMillisecond(), true};
   _scheduled_functions[_schedule_counter] = scheduled_function;
   return SleepyDiscord::Timer([this, id]() {
     auto it = this->_scheduled_functions.find(id);
@@ -19,30 +20,31 @@ SleepyDiscord::Timer DiscordScheduleHandler::schedule(
 }
 
 void DiscordScheduleHandler::tick() {
-  if (_previous_time == 0) {
-    _previous_time = _client->getEpochTimeMillisecond();
-  } else {
-    time_t current_time = _client->getEpochTimeMillisecond();
-    time_t diff = current_time - _previous_time;
-    for (auto& pair : _scheduled_functions) {
-      if (pair.second.enabled) {
-        pair.second.scheduled_time -= diff;
-        if (pair.second.scheduled_time <= 0) {
-          pair.second.function();
-          pair.second.enabled = false;
-        }
-      }
+  for (auto& pair : _scheduled_functions) {
+    if (!pair.second.enabled) {
+      continue;
     }
 
-    // Remove disabled functions
-    auto it = _scheduled_functions.begin();
-    while (it != _scheduled_functions.end()) {
-      if (!it->second.enabled) {
-        it = _scheduled_functions.erase(it);
+    time_t current_time = _client->getEpochTimeMillisecond();
+    time_t diff = current_time - pair.second.previous_time;
+    if (pair.second.enabled) {
+      if (pair.second.scheduled_time <= diff) {
+        pair.second.enabled = false;
+        pair.second.function();
       } else {
-        ++it;
+        pair.second.scheduled_time -= diff;
       }
+      pair.second.previous_time = current_time;
     }
-    _previous_time = current_time;
+  }
+
+  // Remove disabled functions
+  auto it = _scheduled_functions.begin();
+  while (it != _scheduled_functions.end()) {
+    if (!it->second.enabled) {
+      it = _scheduled_functions.erase(it);
+    } else {
+      ++it;
+    }
   }
 }

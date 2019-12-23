@@ -13,6 +13,7 @@ MBedTLSWrapper::MBedTLSWrapper(const std::string& hostname) {
   mbedtls_entropy_init(&_entropy);
   mbedtls_ctr_drbg_init(&_ctr_drbg);
   mbedtls_x509_crt_init(&_cacert);
+  mbedtls_net_init(&_net);
   mbedtls_ssl_init(&_ssl);
   mbedtls_ssl_config_init(&_ssl_conf);
 
@@ -40,12 +41,15 @@ MBedTLSWrapper::MBedTLSWrapper(const std::string& hostname) {
   }
 
   mbedtls_ssl_set_hostname(&_ssl, hostname.c_str());
+
+  _net.fd = -1;
 }
 
 MBedTLSWrapper::~MBedTLSWrapper() {
-  if (_fd > 0) {
-    printf("Closing connection to %d\n", _fd);
-    close(_fd);
+  if (_net.fd > 0) {
+    printf("Closing connection to %d\n", _net.fd);
+    shutdown(_net.fd, SHUT_WR);
+    close(_net.fd);
   }
 
   mbedtls_entropy_free(&_entropy);
@@ -60,31 +64,22 @@ bool MBedTLSWrapper::usable() const { return _error.empty(); }
 std::string MBedTLSWrapper::get_error() const { return _error; }
 
 void MBedTLSWrapper::set_fd(int fd) {
-  _fd = fd;
-  mbedtls_ssl_set_bio(
+  /*mbedtls_ssl_set_bio(
       &_ssl, this,
-      [](void* ctx, const unsigned char* buf, size_t len) {
+      [](void* ctx, const unsigned char* buf, size_t len) -> int {
         auto mbedtls_wrapper = static_cast<MBedTLSWrapper*>(ctx);
-        int ret = send(mbedtls_wrapper->_fd, buf, len, 0);
-        if (ret < 0) {
-          printf("Send error %d\n", ret);
-          return ret;
-        }
-        return ret;
+        return send(mbedtls_wrapper->_fd, buf, len, 0);
       },
-      [](void* ctx, unsigned char* buf, size_t len) {
+      [](void* ctx, unsigned char* buf, size_t len) -> int {
         auto mbedtls_wrapper = static_cast<MBedTLSWrapper*>(ctx);
-        int ret = recv(mbedtls_wrapper->_fd, buf, len, 0);
-        if (ret < 0) {
-          printf("Receive error %d\n", ret);
-          return ret;
-        }
-        return ret;
+        return recv(mbedtls_wrapper->_fd, buf, len, 0);
       },
-      nullptr);
+      nullptr);*/
+  _net.fd = fd;
+  mbedtls_ssl_set_bio(&_ssl, &_net, mbedtls_net_send, mbedtls_net_recv, NULL);
 }
 
-int MBedTLSWrapper::get_fd() const { return _fd; }
+int MBedTLSWrapper::get_fd() const { return _net.fd; }
 
 bool MBedTLSWrapper::start_ssl() {
   int ret = mbedtls_ssl_handshake(&_ssl);

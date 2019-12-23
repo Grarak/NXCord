@@ -30,7 +30,7 @@ class DiscordWebsocket : public SleepyDiscord::GenericWebsocketConnection {
  public:
   DiscordWebsocket(SleepyDiscord::GenericMessageReceiver *message_processor,
                    std::unique_ptr<MBedTLSWrapper> &mbedtls_wrapper);
-  ~DiscordWebsocket();
+  ~DiscordWebsocket() override;
 
   int queue_message(const std::string &message);
   void disconnect(unsigned int, const std::string);

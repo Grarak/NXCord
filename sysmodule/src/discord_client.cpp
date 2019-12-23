@@ -14,7 +14,13 @@ DiscordClient::DiscordClient(const std::string &token) : _token(token) {
   start(_token, 1);
 }
 
-DiscordClient::~DiscordClient() { disconnect(0, "", connection); }
+DiscordClient::~DiscordClient() {
+  for (auto &voice_connection : voiceConnections) {
+    voice_connection.disconnect();
+  }
+  voiceConnections.clear();
+  disconnect(1000, "", connection);
+}
 
 std::string create_acceptkey(const std::string &clientkey) {
   std::string s = clientkey + WS_GUID;
@@ -106,12 +112,6 @@ void DiscordClient::send(std::string message,
 void DiscordClient::disconnect(unsigned int code, const std::string reason,
                                SleepyDiscord::WebsocketConnection &connection) {
   printf("Disconnecting client %s\n", reason.c_str());
-  for (auto &voice_connection : voiceConnections) {
-    auto voice_websocket =
-        std::static_pointer_cast<DiscordWebsocket>(voice_connection.connection);
-    voice_websocket->tick();
-  }
-  voiceConnections.clear();
   auto discord_websocket =
       std::static_pointer_cast<DiscordWebsocket>(connection);
   discord_websocket->disconnect(code, reason);
@@ -130,18 +130,19 @@ SleepyDiscord::Timer DiscordClient::schedule(SleepyDiscord::TimedTask code,
 }
 
 void DiscordClient::tick() {
-  if (!connection) {
-    return;
+  for (auto &voice_connection : voiceConnections) {
+    if (voice_connection.connection) {
+      auto voice_websocket = std::static_pointer_cast<DiscordWebsocket>(
+          voice_connection.connection);
+      voice_websocket->tick();
+    }
+  }
+
+  if (connection) {
+    auto discord_websocket =
+        std::static_pointer_cast<DiscordWebsocket>(connection);
+    discord_websocket->tick();
   }
 
   static_cast<DiscordScheduleHandler &>(getScheduleHandler()).tick();
-  auto discord_websocket =
-      std::static_pointer_cast<DiscordWebsocket>(connection);
-  discord_websocket->tick();
-
-  for (auto &voice_connection : voiceConnections) {
-    auto voice_websocket =
-        std::static_pointer_cast<DiscordWebsocket>(voice_connection.connection);
-    voice_websocket->tick();
-  }
 }
