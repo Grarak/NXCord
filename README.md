@@ -2,15 +2,17 @@
 Currently WIP and not really usable for regular people. Also Discord's TOS forbids the use of third party clients, thus use at your own risk!. Also a lot of code has been taken from https://github.com/yourWaifu/Unofficial-Discord-3DS-Client, so thanks a lot for yourWaifu's 3ds client.
 
 ## Status
-| Feature         | Available | Status                  |
+| Feature         | Working   | Status                  |
 |-----------------|-----------|-------------------------|
 | HTTPS           | Yes       | 100%                    |
 | Websocket       | Yes       | 100%                    |
 | Receive content | Yes       | 100%                    |
-| Send content    | No        | 50% - API done. No GUI. |
+| Send content    | Yes       | 100%                    |
 | UDP connection  | Yes       | 100%                    |
-| Receive voice   | No        | 0%                      |
-| Send voice      | No        | 50% - Need some input   |
+| Receive voice   | Partially | 80% - Can only receive from one source. When multiple people speak, audio will bug out (need to add seperate thread to process multiple audio sources).             |
+| Send voice      | Yes       | 80% - Microphone implementation missing.  |
+| Sysmodule       | No        | 0% - Not tested yet.   |
+| GUI             | No        | 0%                     |
 
 ## Build
 For build you need to install a few dependencies first.
