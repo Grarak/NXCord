@@ -5,6 +5,7 @@
 #include <zlib.h>
 
 #include "discord_session.h"
+#include "logger.h"
 
 #define NEW_LINE "\r\n"
 constexpr const char* METHOD_NAMES[] = {"POST", "PATCH", "DELETE", "GET",
@@ -37,7 +38,7 @@ bool DiscordSession::contains_header(const std::string& key) const {
 std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
     const SleepyDiscord::RequestMethod method,
     SleepyDiscord::Response* response) {
-  printf("Requesting %s %s\n", _url.c_str(), METHOD_NAMES[method]);
+  Logger::write("Requesting %s %s\n", _url.c_str(), METHOD_NAMES[method]);
 
   int ret;
   std::string hostname, path;
@@ -71,7 +72,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   hints.ai_socktype = SOCK_STREAM;
   addrinfo* res;
 
-  printf("Connecting to %s\n", hostname.c_str());
+  Logger::write("Connecting to %s\n", hostname.c_str());
   ret = getaddrinfo(hostname.c_str(), "443", &hints, &res);
   if (ret != 0) {
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
@@ -102,10 +103,10 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
     return mbedtls_wrapper;
   }
 
-  printf("Connection established %d\n", fd);
+  Logger::write("Connection established %d\n", fd);
   mbedtls_wrapper->set_fd(fd);
 
-  printf("Start handshake\n");
+  Logger::write("Start handshake\n");
   if (!mbedtls_wrapper->start_ssl()) {
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
     response->text =
@@ -140,7 +141,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   }
   metadata.append(NEW_LINE);
 
-  printf("Sending payload\n");
+  Logger::write("Sending payload\n");
 
   ret = mbedtls_wrapper->write(
       reinterpret_cast<const unsigned char*>(metadata.c_str()),
@@ -162,7 +163,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
     }
   }
 
-  printf("Reading response\n");
+  Logger::write("Reading response\n");
   int buf_size = 4096;
   unsigned char buf[buf_size];
   bool collect_headers = true;

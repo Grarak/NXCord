@@ -1,22 +1,23 @@
 #include <sleepy_discord/voice_connection.h>
 
+#include "logger.h"
 #include "opus_decoder.h"
 
 SleepyDiscord::CustomInitOpusDecoder SleepyDiscord::CustomOpusDecoder::init =
     []() -> SleepyDiscord::GenericOpusDecoder* { return new OpusDecoder; };
 
 OpusDecoder::OpusDecoder() {
-  printf("Init opus decoder\n");
+  Logger::write("Init opus decoder\n");
   Result res = hwopusDecoderInitialize(
       &hwdecoder, SleepyDiscord::AudioTransmissionDetails::bitrate(),
       SleepyDiscord::AudioTransmissionDetails::channels());
   if (R_FAILED(res)) {
-    printf("hwopusDecoderInitialize: %08" PRIx32 "\n", res);
+    Logger::write("hwopusDecoderInitialize: %08" PRIx32 "\n", res);
   }
 }
 
 OpusDecoder::~OpusDecoder() {
-  printf("Close opus decoder\n");
+  Logger::write("Close opus decoder\n");
   hwopusDecoderExit(&hwdecoder);
 }
 
@@ -38,7 +39,7 @@ int OpusDecoder::decodeOpus(uint8_t* encodedData, size_t encodedDataSize,
       SleepyDiscord::AudioTransmissionDetails::proposedLength() *
           sizeof(int16_t));
   if (R_FAILED(res)) {
-    printf("Opus decoding error: %08" PRIx32 "\n", res);
+    Logger::write("Opus decoding error: %08" PRIx32 "\n", res);
     return -1;
   }
   return 0;

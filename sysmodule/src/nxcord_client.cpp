@@ -1,5 +1,6 @@
 #include <malloc.h>
 
+#include "logger.h"
 #include "nxcord_client.h"
 
 class AudioReceiver : public SleepyDiscord::BaseAudioOutput {
@@ -9,7 +10,7 @@ class AudioReceiver : public SleepyDiscord::BaseAudioOutput {
  public:
   AudioReceiver() : BaseAudioOutput() {
     Result rc = audoutStartAudioOut();
-    printf("audoutStartAudioOut() returned 0x%x\n", rc);
+    Logger::write("audoutStartAudioOut() returned 0x%x\n", rc);
 
     size_t buffer_size = (opus_framesize_bytes + 0xfff) & ~0xfff;
     void* out_buf_data = memalign(0x1000, buffer_size);
@@ -22,7 +23,7 @@ class AudioReceiver : public SleepyDiscord::BaseAudioOutput {
     _audout_buf.data_offset = 0;
 
     rc = audoutAppendAudioOutBuffer(&_audout_buf);
-    printf("audoutAppendAudioOutBuffer() returned 0x%x\n", rc);
+    Logger::write("audoutAppendAudioOutBuffer() returned 0x%x\n", rc);
   }
 
   void write(Container audio,
@@ -41,12 +42,12 @@ class AudioReceiver : public SleepyDiscord::BaseAudioOutput {
   }
 
   ~AudioReceiver() {
-    printf("Releasing audio receiver\n");
+    Logger::write("Releasing audio receiver\n");
     uint32_t released_out_count = 0;
     AudioOutBuffer* audout_released_buf = nullptr;
     audoutWaitPlayFinish(&audout_released_buf, &released_out_count, U64_MAX);
     Result rc = audoutStopAudioOut();
-    printf("audoutStopAudioOut() returned 0x%x\n", rc);
+    Logger::write("audoutStopAudioOut() returned 0x%x\n", rc);
   }
 };
 
@@ -57,7 +58,7 @@ struct AudioSender : public SleepyDiscord::AudioVectorSource {
  public:
   /*AudioSender() {
     Result rc = audinStartAudioIn();
-    printf("audinStartAudioIn() returned 0x%x\n", rc);
+    Logger::write("audinStartAudioIn() returned 0x%x\n", rc);
 
     u32 buffer_size = (opus_framesize_bytes + 0xfff) & ~0xfff;
     void* in_buf_data = memalign(0x1000, buffer_size);
@@ -70,7 +71,7 @@ struct AudioSender : public SleepyDiscord::AudioVectorSource {
     _audin_buf.data_offset = 0;
 
     rc = audinAppendAudioInBuffer(&_audin_buf);
-    printf("audinAppendAudioInBuffer() returned 0x%x\n", rc);
+    Logger::write("audinAppendAudioInBuffer() returned 0x%x\n", rc);
 }*/
   void read(SleepyDiscord::AudioTransmissionDetails& details,
             SleepyDiscord::AudioVectorSource::Container& target) override {
@@ -88,12 +89,12 @@ struct AudioSender : public SleepyDiscord::AudioVectorSource {
   }
 
   /*~AudioSender() {
-    printf("Releasing audio sender\n");
+    Logger::write("Releasing audio sender\n");
     uint32_t released_in_count;
     AudioInBuffer* audin_released_buf = nullptr;
     audinWaitCaptureFinish(&audin_released_buf, &released_in_count, 200);
     Result rc = audinStopAudioIn();
-    printf("audinStopAudioIn() returned 0x%x\n", rc);
+    Logger::write("audinStopAudioIn() returned 0x%x\n", rc);
 }*/
 };
 
@@ -109,19 +110,19 @@ class VoiceEventHandler : public SleepyDiscord::BaseVoiceEventHandler {
   }
 
   void onHeartbeat(SleepyDiscord::VoiceConnection&) override {
-    printf("Voice heartbeat sent\n");
+    Logger::write("Voice heartbeat sent\n");
   }
 
   void onHeartbeatAck(SleepyDiscord::VoiceConnection&,
                       const time_t ping) override {
-    printf("Voice heartbeat acknowledged ping %lums\n", ping);
+    Logger::write("Voice heartbeat acknowledged ping %lums\n", ping);
   }
 };
 
 NXCordClient::NXCordClient(const std::string& token) : DiscordClient(token) {}
 
 void NXCordClient::onReady(SleepyDiscord::Ready readyData) {
-  printf("Joining voice channel\n");
+  Logger::write("Joining voice channel\n");
   std::vector<SleepyDiscord::Server> servers = getServers().vector();
   // Join the fist voice channel we can find
   if (!servers.empty()) {
@@ -142,9 +143,9 @@ void NXCordClient::onReady(SleepyDiscord::Ready readyData) {
 
 void NXCordClient::onResumed() {
   if (_current_voice_context) {
-    printf("Rejoining voice channel %ld %ld\n",
-           _current_voice_context->getChannelID().number(),
-           _current_voice_context->getServerID().number());
+    Logger::write("Rejoining voice channel %ld %ld\n",
+                  _current_voice_context->getChannelID().number(),
+                  _current_voice_context->getServerID().number());
     connectToVoiceChannel(*_current_voice_context);
   }
 }

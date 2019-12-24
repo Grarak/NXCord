@@ -2,6 +2,7 @@
 #include <switch.h>
 
 #include "discord_udp_client.h"
+#include "logger.h"
 
 SleepyDiscord::CustomInitUDPClient SleepyDiscord::CustomUDPClient::init =
     []() -> SleepyDiscord::GenericUDPClient * { return new DiscordUDPClient; };
@@ -12,11 +13,11 @@ bool DiscordUDPClient::connect(const std::string &to, const uint16_t port) {
   }
 
   if ((_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-    perror("Socket creation failed");
+    Logger::write("UDP Socket creation failed");
     return false;
   }
 
-  printf("UDP Connecting to %s:%d %d\n", to.c_str(), port, _fd);
+  Logger::write("UDP Connecting to %s:%d %d\n", to.c_str(), port, _fd);
 
   memset(&_servaddr, 0, sizeof(_servaddr));
   _servaddr.sin_family = AF_INET;
@@ -42,7 +43,7 @@ void DiscordUDPClient::receive(ReceiveHandler handler) {
   socklen_t len;
 
   if (_first_read) {
-    printf("UDP read blocking\n");
+    Logger::write("UDP read blocking\n");
   }
   int read = recvfrom(
       _fd, buf, buf_size,
@@ -58,7 +59,7 @@ void DiscordUDPClient::receive(ReceiveHandler handler) {
 
 DiscordUDPClient::~DiscordUDPClient() {
   if (_fd >= 0) {
-    printf("UDP Closing connection to %d\n", _fd);
+    Logger::write("UDP Closing connection to %d\n", _fd);
     shutdown(_fd, SHUT_WR);
     close(_fd);
   }

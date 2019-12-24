@@ -1,6 +1,7 @@
 #include <mbedtls/error.h>
 #include <sys/socket.h>
 
+#include "logger.h"
 #include "mbedtls_wrapper.h"
 
 std::string get_mbedtls_error(const char* name, int err) {
@@ -47,7 +48,7 @@ MBedTLSWrapper::MBedTLSWrapper(const std::string& hostname) {
 
 MBedTLSWrapper::~MBedTLSWrapper() {
   if (_net.fd > 0) {
-    printf("Closing connection to %d\n", _net.fd);
+    Logger::write("Closing connection to %d\n", _net.fd);
     shutdown(_net.fd, SHUT_WR);
     close(_net.fd);
   }
@@ -64,17 +65,6 @@ bool MBedTLSWrapper::usable() const { return _error.empty(); }
 std::string MBedTLSWrapper::get_error() const { return _error; }
 
 void MBedTLSWrapper::set_fd(int fd) {
-  /*mbedtls_ssl_set_bio(
-      &_ssl, this,
-      [](void* ctx, const unsigned char* buf, size_t len) -> int {
-        auto mbedtls_wrapper = static_cast<MBedTLSWrapper*>(ctx);
-        return send(mbedtls_wrapper->_fd, buf, len, 0);
-      },
-      [](void* ctx, unsigned char* buf, size_t len) -> int {
-        auto mbedtls_wrapper = static_cast<MBedTLSWrapper*>(ctx);
-        return recv(mbedtls_wrapper->_fd, buf, len, 0);
-      },
-      nullptr);*/
   _net.fd = fd;
   mbedtls_ssl_set_bio(&_ssl, &_net, mbedtls_net_send, mbedtls_net_recv, NULL);
 }

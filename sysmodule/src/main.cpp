@@ -1,11 +1,12 @@
 #include <switch.h>
 
+#include "logger.h"
 #include "nxcord_client.h"
 
 extern "C" {
 #ifndef APPLET
 // Adjust size as needed.
-#define INNER_HEAP_SIZE 0x40'000
+#define INNER_HEAP_SIZE 0x100000
 
 u32 __nx_applet_type = AppletType_None;
 size_t nx_inner_heap_size = INNER_HEAP_SIZE;
@@ -77,7 +78,7 @@ void userAppInit(void) {
 }
 
 void userAppExit(void) {
-  printf("Closing services\n");
+  Logger::write("Closing services\n");
   audinExit();
   audoutExit();
   csrngExit();
@@ -90,7 +91,7 @@ u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
 __attribute__((weak)) u32 __nx_exception_ignoredebug = 1;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-  printf("Sysmodule crashed with error 0x%x\n", ctx->error_desc);
+  Logger::write("Sysmodule crashed with error 0x%x\n", ctx->error_desc);
 }
 }
 
@@ -100,6 +101,7 @@ int main(int argc, char **argv) {
 #endif
 
   {
+    Logger::write("Start new client\n");
     NXCordClient client(TOKEN);
 
     while (appletMainLoop()) {

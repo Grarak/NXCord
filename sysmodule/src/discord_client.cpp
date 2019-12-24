@@ -5,6 +5,7 @@
 #include "discord_schedule_handler.h"
 #include "discord_session.h"
 #include "discord_websocket.h"
+#include "logger.h"
 #include "mbedtls_wrapper.h"
 
 #define WS_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -28,9 +29,9 @@ bool DiscordClient::connect(const std::string &uri,
                             SleepyDiscord::WebsocketConnection &connection) {
   unsigned char random_bytes[16];
 
-  printf("Generating random key\n");
+  Logger::write("Generating random key\n");
   if (R_FAILED(csrngGetRandomBytes(random_bytes, 16))) {
-    printf("Failed to generate random bytes\n");
+    Logger::write("Failed to generate random bytes\n");
     message_processor->handleFailToConnect();
     return false;
   }
@@ -47,7 +48,7 @@ bool DiscordClient::connect(const std::string &uri,
       {"Sec-WebSocket-Version", "13"}};
   session.setHeader(header);
 
-  printf("Request connection to websocket\n");
+  Logger::write("Request connection to websocket\n");
 
   SleepyDiscord::Response response;
   std::unique_ptr<MBedTLSWrapper> mbedtls_wrapper =
@@ -55,26 +56,26 @@ bool DiscordClient::connect(const std::string &uri,
 
   if (response.statusCode !=
       SleepyDiscord::SWITCHING_PROTOCOLS) {  // error check
-    printf("Websocket connection Error: %s\n", response.text.c_str());
+    Logger::write("Websocket connection Error: %s\n", response.text.c_str());
     message_processor->handleFailToConnect();
     return false;
   }
 
   auto it = response.header.find("sec-websocket-accept");
   if (it == response.header.end()) {
-    printf("Couldn't parse sec-websocket-accept\n");
+    Logger::write("Couldn't parse sec-websocket-accept\n");
     message_processor->handleFailToConnect();
     return false;
   }
 
   std::string accept_key = create_acceptkey(client_key);
   if (it->second != accept_key) {
-    printf("Accept key is invalid\n");
+    Logger::write("Accept key is invalid\n");
     message_processor->handleFailToConnect();
     return false;
   }
 
-  printf("Connection to websocket established\n");
+  Logger::write("Connection to websocket established\n");
   connection =
       std::make_shared<DiscordWebsocket>(message_processor, mbedtls_wrapper);
   return true;
@@ -87,19 +88,19 @@ void DiscordClient::send(std::string message,
         std::static_pointer_cast<DiscordWebsocket>(connection);
     int ret = discord_websocket->queue_message(message);
     if (ret != 0) {  // error
-      printf("Send error: ");
+      Logger::write("Send error: ");
       switch (ret) {
         case WSLAY_ERR_NO_MORE_MSG:
-          printf("Could not queue given message\n");
+          Logger::write("Could not queue given message\n");
           break;
         case WSLAY_ERR_INVALID_ARGUMENT:
-          printf("The given message is invalid\n");
+          Logger::write("The given message is invalid\n");
           break;
         case WSLAY_ERR_NOMEM:
-          printf("Out of memory\n");
+          Logger::write("Out of memory\n");
           break;
         default:
-          printf("unknown\n");
+          Logger::write("unknown\n");
           break;
       }
     }
@@ -108,7 +109,7 @@ void DiscordClient::send(std::string message,
 
 void DiscordClient::disconnect(unsigned int code, const std::string reason,
                                SleepyDiscord::WebsocketConnection &connection) {
-  printf("Disconnecting client %s\n", reason.c_str());
+  Logger::write("Disconnecting client %s\n", reason.c_str());
   if (connection) {
     auto discord_websocket =
         std::static_pointer_cast<DiscordWebsocket>(connection);
@@ -119,7 +120,7 @@ void DiscordClient::disconnect(unsigned int code, const std::string reason,
 
 void DiscordClient::onError(SleepyDiscord::ErrorCode errorCode,
                             const std::string error_message) {
-  printf("Error %i: %s\n", errorCode, error_message.c_str());
+  Logger::write("Error %i: %s\n", errorCode, error_message.c_str());
 }
 
 SleepyDiscord::Timer DiscordClient::schedule(SleepyDiscord::TimedTask code,
