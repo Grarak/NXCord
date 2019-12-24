@@ -21,5 +21,5 @@ class DiscordClient : public SleepyDiscord::BaseDiscordClient {
   DiscordClient(const std::string &token);
   virtual ~DiscordClient();
 
-  virtual void tick();
+  void tick();
 };

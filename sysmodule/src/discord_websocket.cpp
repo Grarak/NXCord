@@ -124,17 +124,20 @@ bool DiscordWebsocket::pollSocket(int events) {
   return false;
 }
 
-void DiscordWebsocket::tick() {
+bool DiscordWebsocket::tick() {
   int ret;
   if (wslay_event_want_read(_wslay_event_context) && pollSocket(POLLIN)) {
     if ((ret = wslay_event_recv(_wslay_event_context)) != 0) {
       printf("Wslay read failed %d\n", ret);
+      return false;
     }
   }
 
   if (wslay_event_want_write(_wslay_event_context) && pollSocket(POLLOUT)) {
     if ((ret = wslay_event_send(_wslay_event_context)) != 0) {
       printf("Wslay write failed %d\n", ret);
+      return false;
     }
   }
+  return true;
 }

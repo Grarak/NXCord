@@ -28,12 +28,15 @@ bool DiscordUDPClient::connect(const std::string &to, const uint16_t port) {
 
 void DiscordUDPClient::send(const uint8_t *buffer, size_t buffer_length,
                             SendHandler handler) {
+  svcSleepThread(
+      1);  // Sometimes sending doesn't work when listening, weird fix
   sendto(_fd, reinterpret_cast<const char *>(buffer), buffer_length, 0,
          reinterpret_cast<const sockaddr *>(&_servaddr), sizeof(_servaddr));
   handler();
 }
 
 void DiscordUDPClient::receive(ReceiveHandler handler) {
+  svcSleepThread(1);
   size_t buf_size = 1920;
   uint8_t buf[buf_size];
   socklen_t len;

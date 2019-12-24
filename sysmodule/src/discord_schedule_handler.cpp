@@ -27,15 +27,13 @@ void DiscordScheduleHandler::tick() {
 
     time_t current_time = _client->getEpochTimeMillisecond();
     time_t diff = current_time - pair.second.previous_time;
-    if (pair.second.enabled) {
-      if (pair.second.scheduled_time <= diff) {
-        pair.second.enabled = false;
-        pair.second.function();
-      } else {
-        pair.second.scheduled_time -= diff;
-      }
-      pair.second.previous_time = current_time;
+    if (pair.second.scheduled_time <= diff) {
+      pair.second.enabled = false;
+      pair.second.function();
+    } else {
+      pair.second.scheduled_time -= diff;
     }
+    pair.second.previous_time = current_time;
   }
 
   // Remove disabled functions
@@ -48,3 +46,5 @@ void DiscordScheduleHandler::tick() {
     }
   }
 }
+
+void DiscordScheduleHandler::clear() { _scheduled_functions.clear(); }

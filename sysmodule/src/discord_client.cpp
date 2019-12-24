@@ -14,13 +14,7 @@ DiscordClient::DiscordClient(const std::string &token) : _token(token) {
   start(_token, 1);
 }
 
-DiscordClient::~DiscordClient() {
-  for (auto &voice_connection : voiceConnections) {
-    voice_connection.disconnect();
-  }
-  voiceConnections.clear();
-  disconnect(1000, "", connection);
-}
+DiscordClient::~DiscordClient() { quit(false); }
 
 std::string create_acceptkey(const std::string &clientkey) {
   std::string s = clientkey + WS_GUID;
@@ -54,6 +48,7 @@ bool DiscordClient::connect(const std::string &uri,
   session.setHeader(header);
 
   printf("Request connection to websocket\n");
+
   SleepyDiscord::Response response;
   std::unique_ptr<MBedTLSWrapper> mbedtls_wrapper =
       std::move(session.request(SleepyDiscord::Get, &response));
@@ -87,24 +82,26 @@ bool DiscordClient::connect(const std::string &uri,
 
 void DiscordClient::send(std::string message,
                          SleepyDiscord::WebsocketConnection &connection) {
-  auto discord_websocket =
-      std::static_pointer_cast<DiscordWebsocket>(connection);
-  int ret = discord_websocket->queue_message(message);
-  if (ret != 0) {  // error
-    printf("Send error: ");
-    switch (ret) {
-      case WSLAY_ERR_NO_MORE_MSG:
-        printf("Could not queue given message\n");
-        break;
-      case WSLAY_ERR_INVALID_ARGUMENT:
-        printf("The given message is invalid\n");
-        break;
-      case WSLAY_ERR_NOMEM:
-        printf("Out of memory\n");
-        break;
-      default:
-        printf("unknown\n");
-        break;
+  if (connection) {
+    auto discord_websocket =
+        std::static_pointer_cast<DiscordWebsocket>(connection);
+    int ret = discord_websocket->queue_message(message);
+    if (ret != 0) {  // error
+      printf("Send error: ");
+      switch (ret) {
+        case WSLAY_ERR_NO_MORE_MSG:
+          printf("Could not queue given message\n");
+          break;
+        case WSLAY_ERR_INVALID_ARGUMENT:
+          printf("The given message is invalid\n");
+          break;
+        case WSLAY_ERR_NOMEM:
+          printf("Out of memory\n");
+          break;
+        default:
+          printf("unknown\n");
+          break;
+      }
     }
   }
 }
@@ -112,10 +109,12 @@ void DiscordClient::send(std::string message,
 void DiscordClient::disconnect(unsigned int code, const std::string reason,
                                SleepyDiscord::WebsocketConnection &connection) {
   printf("Disconnecting client %s\n", reason.c_str());
-  auto discord_websocket =
-      std::static_pointer_cast<DiscordWebsocket>(connection);
-  discord_websocket->disconnect(code, reason);
-  connection.reset();
+  if (connection) {
+    auto discord_websocket =
+        std::static_pointer_cast<DiscordWebsocket>(connection);
+    discord_websocket->disconnect(code, reason);
+    connection.reset();
+  }
 }
 
 void DiscordClient::onError(SleepyDiscord::ErrorCode errorCode,
@@ -130,18 +129,22 @@ SleepyDiscord::Timer DiscordClient::schedule(SleepyDiscord::TimedTask code,
 }
 
 void DiscordClient::tick() {
+  if (connection) {
+    auto discord_websocket =
+        std::static_pointer_cast<DiscordWebsocket>(connection);
+    if (!discord_websocket->tick()) {
+      static_cast<DiscordScheduleHandler &>(getScheduleHandler()).clear();
+      restart();
+      return;
+    }
+  }
+
   for (auto &voice_connection : voiceConnections) {
     if (voice_connection.connection) {
       auto voice_websocket = std::static_pointer_cast<DiscordWebsocket>(
           voice_connection.connection);
       voice_websocket->tick();
     }
-  }
-
-  if (connection) {
-    auto discord_websocket =
-        std::static_pointer_cast<DiscordWebsocket>(connection);
-    discord_websocket->tick();
   }
 
   static_cast<DiscordScheduleHandler &>(getScheduleHandler()).tick();

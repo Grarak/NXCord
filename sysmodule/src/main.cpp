@@ -38,7 +38,20 @@ void userAppInit(void) {
     fatalThrow(rc);
   }
 
-  rc = socketInitializeDefault();
+  SocketInitConfig sockConf = {
+      .bsdsockets_version = 1,
+
+      .tcp_tx_buf_size = 0x800,
+      .tcp_rx_buf_size = 0x1000,
+      .tcp_tx_buf_max_size = 0x2EE0,
+      .tcp_rx_buf_max_size = 0x2EE0,
+
+      .udp_tx_buf_size = 0x800,
+      .udp_rx_buf_size = 0x1000,
+
+      .sb_efficiency = 4,
+  };
+  rc = socketInitialize(&sockConf);
   if (R_FAILED(rc)) {
     fatalThrow(rc);
   }
@@ -53,6 +66,11 @@ void userAppInit(void) {
     fatalThrow(rc);
   }
 
+  rc = audinInitialize();
+  if (R_FAILED(rc)) {
+    fatalThrow(rc);
+  }
+
 #ifdef APPLET
   nxlinkStdio();
 #endif
@@ -60,6 +78,7 @@ void userAppInit(void) {
 
 void userAppExit(void) {
   printf("Closing services\n");
+  audinExit();
   audoutExit();
   csrngExit();
   socketExit();
@@ -77,7 +96,7 @@ void __libnx_exception_handler(ThreadExceptionDump *ctx) {
 
 int main(int argc, char **argv) {
 #ifdef APPLET
-  consoleInit(NULL);
+  consoleInit(nullptr);
 #endif
 
   {
@@ -91,7 +110,7 @@ int main(int argc, char **argv) {
       if (kDown & KEY_B) {
         break;
       }
-      consoleUpdate(NULL);
+      consoleUpdate(nullptr);
 #else
       svcSleepThread(2e+7);
 #endif
@@ -100,7 +119,7 @@ int main(int argc, char **argv) {
 
   userAppExit();
 #ifdef APPLET
-  consoleExit(NULL);
+  consoleExit(nullptr);
 #endif
 
   return 0;

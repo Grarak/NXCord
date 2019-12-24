@@ -25,4 +25,5 @@ class DiscordScheduleHandler : public SleepyDiscord::GenericScheduleHandler {
                                 const time_t milliseconds) override;
 
   void tick();
+  void clear();
 };

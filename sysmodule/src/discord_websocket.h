@@ -34,5 +34,5 @@ class DiscordWebsocket : public SleepyDiscord::GenericWebsocketConnection {
 
   int queue_message(const std::string &message);
   void disconnect(unsigned int, const std::string);
-  void tick();
+  bool tick();
 };

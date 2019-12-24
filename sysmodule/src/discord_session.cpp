@@ -1,4 +1,5 @@
 #include <netdb.h>
+#include <switch.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <zlib.h>
