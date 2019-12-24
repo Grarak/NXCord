@@ -10,8 +10,8 @@ Currently WIP and not really usable for regular people. Also Discord's TOS forbi
 | Send content    | Yes       | 100%                    |
 | UDP connection  | Yes       | 100%                    |
 | Receive voice   | Partially | 80% - Can only receive from one source. When multiple people speak, audio will bug out (need to add seperate thread to process multiple audio sources).             |
-| Send voice      | Yes       | 80% - Microphone implementation missing.  |
-| Sysmodule       | No        | 0% - Not tested yet.   |
+| Send voice      | Yes       | 85% - Microphone coded added, but probably needs its own thread.  |
+| Sysmodule       | Yes       | 100%                   |
 | GUI             | No        | 0%                     |
 
 ## Build
