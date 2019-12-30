@@ -1,12 +1,10 @@
 #pragma once
-#include <switch.h>
+
+#include <mutex>
+#include <queue>
 
 #include "discord_client.h"
 #include "logger.h"
-
-constexpr size_t opus_framesize_bytes =
-    SleepyDiscord::AudioTransmissionDetails::proposedLength() *
-    sizeof(SleepyDiscord::AudioSample);
 
 class AudioReceiver;
 class VoiceEventHandler;

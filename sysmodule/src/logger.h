@@ -4,5 +4,7 @@
 #define LOG_NAME "nxcord-sys"
 
 namespace Logger {
+
 void write(const char* format, ...);
+
 }

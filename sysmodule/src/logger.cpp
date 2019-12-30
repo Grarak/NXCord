@@ -6,11 +6,14 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <mutex>
 #include <string>
 
 #include "logger.h"
 
 namespace Logger {
+
+std::mutex logger_mutex;
 
 bool create_directories(const char* file_path) {
   for (const char* p = strchr(file_path + 1, '/'); p; p = strchr(p + 1, '/')) {
@@ -26,6 +29,8 @@ bool create_directories(const char* file_path) {
 }
 
 void write(const char* fmt, ...) {
+  std::lock_guard<std::mutex> lock(logger_mutex);
+
   DIR* log_dir = opendir(LOG_PATH);
   FILE* fp = nullptr;
   int log_size;

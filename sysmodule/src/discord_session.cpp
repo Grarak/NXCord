@@ -65,9 +65,8 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
     return mbedtls_wrapper;
   }
 
-  addrinfo hints;
+  addrinfo hints{};
   int fd;
-  memset(&hints, 0, sizeof(addrinfo));
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   addrinfo* res;

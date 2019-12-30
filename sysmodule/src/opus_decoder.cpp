@@ -37,10 +37,10 @@ int OpusDecoder::decodeOpus(uint8_t* encodedData, size_t encodedDataSize,
       encodedData - sizeof(HwopusHeader),
       encodedDataSize + sizeof(HwopusHeader), decodedData,
       SleepyDiscord::AudioTransmissionDetails::proposedLength() *
-          sizeof(int16_t));
+          sizeof(SleepyDiscord::AudioSample));
   if (R_FAILED(res)) {
     Logger::write("Opus decoding error: %08" PRIx32 "\n", res);
     return -1;
   }
-  return 0;
+  return decoded_sample_count;
 }

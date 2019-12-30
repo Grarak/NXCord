@@ -11,7 +11,7 @@
 #define WS_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 DiscordClient::DiscordClient(const std::string &token) : _token(token) {
-  setScheduleHandler<DiscordScheduleHandler>(this);
+  setScheduleHandler<DiscordScheduleHandler>();
   start(_token, 1);
 }
 

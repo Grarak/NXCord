@@ -1,107 +1,53 @@
-#include <malloc.h>
-
 #include "logger.h"
+#include "nxcord_audio_capture.h"
+#include "nxcord_audio_player.h"
 #include "nxcord_client.h"
+#include "utils.h"
 
 class AudioReceiver : public SleepyDiscord::BaseAudioOutput {
  private:
-  AudioOutBuffer _audout_buf;
+  NXCordAudioPlayer _player;
 
  public:
-  AudioReceiver() : BaseAudioOutput() {
-    Result rc = audoutStartAudioOut();
-    Logger::write("audoutStartAudioOut() returned 0x%x\n", rc);
-
-    size_t buffer_size = (opus_framesize_bytes + 0xfff) & ~0xfff;
-    void* out_buf_data = memalign(0x1000, buffer_size);
-    std::memset(out_buf_data, 0, buffer_size);
-
-    _audout_buf.next = nullptr;
-    _audout_buf.buffer = out_buf_data;
-    _audout_buf.buffer_size = buffer_size;
-    _audout_buf.data_size = opus_framesize_bytes;
-    _audout_buf.data_offset = 0;
-
-    rc = audoutAppendAudioOutBuffer(&_audout_buf);
-    Logger::write("audoutAppendAudioOutBuffer() returned 0x%x\n", rc);
-  }
-
-  void write(Container audio,
+  void write(std::vector<SleepyDiscord::AudioSample>& audio,
              SleepyDiscord::AudioTransmissionDetails& details) override {
-    uint32_t released_out_count = 0;
-    AudioOutBuffer* audout_released_buf = nullptr;
-
-    audoutWaitPlayFinish(&audout_released_buf, &released_out_count, U64_MAX);
-    if (released_out_count > 0) {
-      if (audout_released_buf) {
-        std::memcpy(audout_released_buf->buffer, audio.data(),
-                    audout_released_buf->data_size);
-      }
-      audoutAppendAudioOutBuffer(audout_released_buf);
-    }
-  }
-
-  ~AudioReceiver() {
-    Logger::write("Releasing audio receiver\n");
-    uint32_t released_out_count = 0;
-    AudioOutBuffer* audout_released_buf = nullptr;
-    audoutWaitPlayFinish(&audout_released_buf, &released_out_count, U64_MAX);
-    Result rc = audoutStopAudioOut();
-    Logger::write("audoutStopAudioOut() returned 0x%x\n", rc);
+    _player.queue(audio, details);
   }
 };
 
 struct AudioSender : public SleepyDiscord::AudioVectorSource {
  private:
-  // AudioInBuffer _audin_buf;
+  NXCordAudioCapture _audio_capture;
+  std::vector<SleepyDiscord::AudioSample> _capture;
 
  public:
-  /*AudioSender() {
-    Result rc = audinStartAudioIn();
-    Logger::write("audinStartAudioIn() returned 0x%x\n", rc);
-
-    u32 buffer_size = (opus_framesize_bytes + 0xfff) & ~0xfff;
-    void* in_buf_data = memalign(0x1000, buffer_size);
-    std::memset(in_buf_data, 0, buffer_size);
-
-    _audin_buf.next = NULL;
-    _audin_buf.buffer = in_buf_data;
-    _audin_buf.buffer_size = buffer_size;
-    _audin_buf.data_size = opus_framesize_bytes;
-    _audin_buf.data_offset = 0;
-
-    rc = audinAppendAudioInBuffer(&_audin_buf);
-    Logger::write("audinAppendAudioInBuffer() returned 0x%x\n", rc);
-}*/
-  void read(SleepyDiscord::AudioTransmissionDetails& details,
-            SleepyDiscord::AudioVectorSource::Container& target) override {
-    /*uint32_t released_in_count;
-    AudioInBuffer* audin_released_buf = nullptr;
-
-    audinWaitCaptureFinish(&audin_released_buf, &released_in_count, 200);
-    if (released_in_count > 0) {
-      if (audin_released_buf) {
-        std::memcpy(target.data(), audin_released_buf->buffer,
-                    audin_released_buf->data_size);
+  bool frameAvailable() {
+    _capture = std::move(_audio_capture.poll());
+    float average_volume = 0;
+    if (_capture.size() > 0) {
+      for (const auto& sample : _capture) {
+        average_volume = static_cast<float>(std::abs(sample)) /
+                         static_cast<float>(Utils::audio_sample_max);
       }
-      audinAppendAudioInBuffer(audin_released_buf);
-  }*/
+      average_volume /= static_cast<float>(_capture.size());
+    }
+    return average_volume > 0.00001;  // Set user defined threshold here
   }
 
-  /*~AudioSender() {
-    Logger::write("Releasing audio sender\n");
-    uint32_t released_in_count;
-    AudioInBuffer* audin_released_buf = nullptr;
-    audinWaitCaptureFinish(&audin_released_buf, &released_in_count, 200);
-    Result rc = audinStopAudioIn();
-    Logger::write("audinStopAudioIn() returned 0x%x\n", rc);
-}*/
+  void read(SleepyDiscord::AudioTransmissionDetails& details,
+            SleepyDiscord::AudioVectorSource::Container& target) override {
+    if (_capture.size() > 0) {
+      std::memcpy(target.data(), _capture.data(),
+                  _capture.size() * sizeof(SleepyDiscord::AudioSample));
+    }
+  }
 };
 
 class VoiceEventHandler : public SleepyDiscord::BaseVoiceEventHandler {
+ private:
  public:
   void onReady(SleepyDiscord::VoiceConnection& connection) override {
-    SleepyDiscord::BaseAudioOutput* audio_receiver = new AudioReceiver;
+    SleepyDiscord::BaseAudioOutput* audio_receiver = new AudioReceiver();
     connection.setAudioOutput(audio_receiver);
     connection
         .startSpeaking<AudioSender>();  // Send garbage to discord, otherwise we
