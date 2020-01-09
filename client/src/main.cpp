@@ -1,33 +1,13 @@
 #include <switch.h>
 
 #include <common/logger.hpp>
-#include <nxcord/nxcord_client.hpp>
-#include <stratosphere.hpp>
+#include <common/nxcord_com_interface.hpp>
 
-#include "ipc_server.hpp"
+#include "ipc_client.hpp"
+#include "standalone_client.hpp"
+#include "ui/ui_main.hpp"
 
 extern "C" {
-#ifndef APPLICATION
-// Adjust size as needed.
-#define INNER_HEAP_SIZE 0x100000
-
-u32 __nx_applet_type = AppletType_None;
-size_t nx_inner_heap_size = INNER_HEAP_SIZE;
-char nx_inner_heap[INNER_HEAP_SIZE];
-
-void __libnx_initheap(void) {
-  void *addr = nx_inner_heap;
-  size_t size = nx_inner_heap_size;
-
-  // Newlib
-  extern char *fake_heap_start;
-  extern char *fake_heap_end;
-
-  fake_heap_start = (char *)addr;
-  fake_heap_end = (char *)addr + size;
-}
-#endif
-
 void userAppInit(void) {
 #ifndef APPLICATION
   // Seems like every thread on the switch needs to sleep for a little
@@ -42,6 +22,7 @@ void userAppInit(void) {
     fatalThrow(rc);
   }
 
+#ifdef STANDALONE
   SocketInitConfig sockConf = {
       .bsdsockets_version = 1,
 
@@ -75,17 +56,18 @@ void userAppInit(void) {
     fatalThrow(rc);
   }
 
-#ifdef APPLICATION
   nxlinkStdio();
 #endif
 }
 
 void userAppExit(void) {
   Logger::write("Closing services\n");
+#ifdef STANDALONE
   audinExit();
   audoutExit();
   csrngExit();
   socketExit();
+#endif
   smExit();
 }
 
@@ -113,71 +95,29 @@ void __libnx_exception_handler(ThreadExceptionDump *ctx) {
 }
 }
 
-namespace ams::result {
-bool CallFatalOnResultAssertion = true;
-}
-
 namespace Logger {
-std::string_view log_name = "nxcord-sys";
+std::string_view log_name = "nxcord-client";
 }
 
-int main(int argc, char **argv) {
-#ifdef APPLICATION
-  consoleInit(nullptr);
-#endif
-
+int main(int argc, char *argv[]) {
   {
-    Logger::write("Starting new client\n");
-    NXCordClient client;
-    auto settings = NXCordSettings::New();
-    client.loadSettings(settings);
-    client.startConnection();
-#ifndef APPLICATION
-    IPCServer ipc_server;
-#endif
-
-    bool joined = false;
-
-    while (appletMainLoop()) {
-      client.tick();
-
-      if (!joined && client.isConnected()) {
-        const std::vector<IPCStruct::DiscordServer> &servers =
-            client.getCachedServers();
-        if (!servers.empty()) {
-          const std::vector<IPCStruct::DiscordChannel> &channels =
-              client.getCachedChannels(servers[0].id);
-          for (const auto &channel : channels) {
-            if (channel.type == IPCStruct::DiscordChannelType::SERVER_VOICE) {
-              client.joinVoiceChannel(channel.serverId, channel.id);
-              break;
-            }
-          }
-        }
-        joined = true;
-      }
-
-#ifdef APPLICATION
-      hidScanInput();
-      u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-      if (kDown & KEY_B) {
-        break;
-      }
-      consoleUpdate(nullptr);
+    std::shared_ptr<NXCordComInterface> interface = std::make_shared<
+#ifdef STANDALONE
+        StandaloneClient
 #else
-      IPCServer::QueuedFunction function = ipc_server.pollQueuedFunction();
-      if (function) {
-        function(client);
-      }
-      svcSleepThread(2e+7);
+        IPCClient
 #endif
-    }
+        >();
+
+    auto renderer = pu::ui::render::Renderer::New(
+        SDL_INIT_EVERYTHING,
+        pu::ui::render::RendererInitOptions::RendererNoSound,
+        pu::ui::render::RendererHardwareFlags);
+    auto main = UIMain::New(renderer, interface);
+    main->Prepare();
+    main->Show();
   }
 
   userAppExit();
-#ifdef APPLICATION
-  consoleExit(nullptr);
-#endif
-
   return 0;
 }

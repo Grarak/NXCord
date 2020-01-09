@@ -2,9 +2,12 @@
 .SUFFIXES:
 #---------------------------------------------------------------------------------
 
-TOPDIR ?= $(CURDIR)
+ifeq ($(strip $(DEVKITPRO)),)
+$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>/devkitpro")
+endif
 
-include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../external/Atmosphere-libs/config/templates/stratosphere.mk
+TOPDIR ?= $(CURDIR)
+include $(DEVKITPRO)/libnx/switch_rules
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -36,14 +39,49 @@ include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../external/Atmosphere-li
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src ../common/src
+SOURCES		:=	src ../common/src src/ui src/ui/elements
 DATA		:=	data
+INCLUDES	:=	include ../include ../external/Plutonium/Plutonium/Output/include
 #ROMFS		:=	romfs
 
-CFLAGS		+=	$(BUILD_FLAGS)
-CXXFLAGS	+=	$(BUILD_FLAGS)
+#---------------------------------------------------------------------------------
+# options for code generation
+#---------------------------------------------------------------------------------
+ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
-include $(TOPDIR)/../nxcord/nxcord.mk
+CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
+			$(ARCH) $(DEFINES)
+
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__
+
+ifneq ($(STANDALONE),)
+	CFLAGS	+=	-DSTANDALONE
+endif
+
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
+
+ASFLAGS	:=	-g $(ARCH)
+LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+
+LIBS	:=	-lpu -lfreetype -lSDL2_mixer -lopusfile -lopus -lmodplug -lmpg123 -lvorbisidec \
+			-logg -lSDL2_ttf -lSDL2_gfx -lSDL2_image -lSDL2 -lEGL -lGLESv2 -lglapi \
+			-ldrm_nouveau -lwebp -lpng -ljpeg `sdl2-config --libs` `freetype-config --libs` -lnx
+
+#---------------------------------------------------------------------------------
+# list of directories containing libraries, this must be the top level containing
+# include and lib
+#---------------------------------------------------------------------------------
+LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(TOPDIR)/../external/Plutonium/Plutonium/Output
+
+ifneq ($(STANDALONE),)
+	include $(TOPDIR)/../nxcord/nxcord.mk
+	export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+	export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(TOPDIR)/$(dir)) \
+				$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+				-I$(TOPDIR)/$(BUILD)
+	export CFLAGS	+=	$(INCLUDE)
+	export CXXFLAGS	+=	$(INCLUDE)
+endif
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -90,6 +128,19 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
+ifeq ($(strip $(CONFIG_JSON)),)
+	jsons := $(wildcard *.json)
+	ifneq (,$(findstring $(TARGET).json,$(jsons)))
+		export APP_JSON := $(TOPDIR)/$(TARGET).json
+	else
+		ifneq (,$(findstring config.json,$(jsons)))
+			export APP_JSON := $(TOPDIR)/config.json
+		endif
+	endif
+else
+	export APP_JSON := $(TOPDIR)/$(CONFIG_JSON)
+endif
+
 ifeq ($(strip $(ICON)),)
 	icons := $(wildcard *.jpg)
 	ifneq (,$(findstring $(TARGET).jpg,$(icons)))
@@ -119,27 +170,28 @@ ifneq ($(ROMFS),)
 	export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: $(BUILD) clean all application
+.PHONY: $(BUILD) clean all standalone
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
 
-application:
+standalone:
 	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile \
-	BUILD_FLAGS=-DAPPLICATION
+	STANDALONE=true
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile \
-	CONFIG_JSON=sysmodule.json \
-	APP_JSON=$(TOPDIR)/sysmodule.json
+	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).elf
-	@rm -fr $(TARGET).nro $(TARGET).nacp $(TARGET).nsp $(TARGET).nso $(TARGET).npdm
+ifeq ($(strip $(APP_JSON)),)
+	@rm -fr $(BUILD) $(TARGET).nro $(TARGET).nacp $(TARGET).elf
+else
+	@rm -fr $(BUILD) $(TARGET).nsp $(TARGET).nso $(TARGET).npdm $(TARGET).elf
+endif
 
 
 #---------------------------------------------------------------------------------
