@@ -64,8 +64,10 @@ void on_msg_recv_callback(wslay_event_context_ptr ctx,
   DiscordWebsocket *discord_websocket =
       static_cast<DiscordWebsocket *>(user_data);
   const char *msg = reinterpret_cast<const char *>(arg->msg);
+  printf("Receive %s\n", std::string(msg, msg + arg->msg_length).c_str());
   discord_websocket->_message_processor->processMessage(
       std::string(msg, msg + arg->msg_length));
+  printf("Message processed\n");
 }
 
 DiscordWebsocket::DiscordWebsocket(
@@ -97,6 +99,7 @@ DiscordWebsocket::~DiscordWebsocket() { disconnect(1000, ""); }
 int DiscordWebsocket::queue_message(const std::string &message) {
   wslay_event_msg msg = {1, reinterpret_cast<const uint8_t *>(message.c_str()),
                          message.size()};
+  printf("Send %s\n", message.c_str());
   return wslay_event_queue_msg(_wslay_event_context, &msg);
 }
 

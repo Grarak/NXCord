@@ -23,9 +23,6 @@ class DiscordUDPClient : public SleepyDiscord::GenericUDPClient {
   std::mutex _receiver_func_mutex;
   friend void receive_thread(DiscordUDPClient* udp_client);
 
-  std::atomic<Barrier*> _sync_barrier;
-  std::vector<uint8_t> _sync_buf;
-
   void disconnect();
 
  public:
@@ -36,7 +33,14 @@ class DiscordUDPClient : public SleepyDiscord::GenericUDPClient {
   void send(
       const uint8_t* buffer, size_t bufferLength,
       SendHandler handler = []() {}) override;
-  void setReceiveHandler(ReceiveHandler handler) override;
-  void unsetReceiveHandler() override;
-  std::vector<uint8_t> waitForReceive() override;
+
+  inline void setReceiveHandler(ReceiveHandler handler) override {
+    std::scoped_lock lock(_receiver_func_mutex);
+    GenericUDPClient::setReceiveHandler(std::move(handler));
+  }
+
+  inline void unsetReceiveHandler() override {
+    std::scoped_lock lock(_receiver_func_mutex);
+    GenericUDPClient::unsetReceiveHandler();
+  }
 };

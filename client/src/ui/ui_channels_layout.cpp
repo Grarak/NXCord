@@ -3,10 +3,11 @@
 UIChannelsLayout::UIChannelsLayout(const Interface& interface,
                                    const IPCStruct::DiscordServer& server)
     : UICustomLayout(interface) {
-  auto server_name_text = TextBlock::New(0, 0, server.name);
-  int text_height = server_name_text->GetTextHeight();
-  _channels_menu = Menu::New(0, text_height, 1280,
-                             pu::ui::Color(0xff, 0xff, 0xff, 0xff), 100, 7);
+  auto server_name_text =
+      TextBlock::New(0, 0, server.name + std::string(" - Voice channels"));
+  server_name_text->SetX(1280 / 2 - server_name_text->GetTextWidth() / 2);
+  _channels_menu = Menu::New(0, server_name_text->GetTextHeight(), 1280,
+                             pu::ui::Color(0xff, 0xff, 0xff, 0xff), 50, 14);
   _channels_menu->SetOnFocusColor(pu::ui::Color(0, 0, 0, 0x80));
 
   AddThread([this, server]() {

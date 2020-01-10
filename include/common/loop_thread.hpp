@@ -76,5 +76,5 @@ class LoopThread {
     }
   }
 
-  bool isActive() const { return _active; }
+  inline bool isActive() const { return _active; }
 };

@@ -10,7 +10,7 @@
 
 class StandaloneClient : public NXCordComInterface {
  private:
-  NXCordClient *_nxcord_client;
+  NXCordClient _nxcord_client;
   std::mutex _nxcord_client_mutex;
   LoopThread<StandaloneClient *> _standalone_client_thread;
 

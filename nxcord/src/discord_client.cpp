@@ -238,7 +238,9 @@ bool DiscordClient::submit2faTicket(const std::string &code) {
   return false;
 }
 
-void DiscordClient::startConnection() { start(_token, 1); }
+void DiscordClient::startConnection() {
+  schedule([this]() { start(_token, 1); }, 0);
+}
 
 void DiscordClient::tick() {
   if (connection) {
@@ -247,7 +249,7 @@ void DiscordClient::tick() {
     discord_websocket->tick();
   }
 
-  // Voiceconnections can remove themselves from the list
+  // Voice connections can remove themselves from the list
   // Consider this when looping through
   std::set<SleepyDiscord::VoiceContext *> already_called;
   size_t index = 0;

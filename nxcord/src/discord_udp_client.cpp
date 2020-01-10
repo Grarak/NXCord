@@ -13,30 +13,29 @@ void receive_thread(DiscordUDPClient *udp_client) {
   uint8_t buf[buf_size];
   socklen_t len;
 
-  int read =
-      recvfrom(udp_client->_fd, buf, buf_size, MSG_WAITALL,
-               reinterpret_cast<sockaddr *>(&udp_client->_servaddr), &len);
-  if (read > 0) {
-    udp_client->_receiver_func_mutex.lock();
-    SleepyDiscord::GenericUDPClient::ReceiveHandler handler =
-        udp_client->receive_handler;
-    udp_client->_receiver_func_mutex.unlock();
+  while (udp_client->_receive_thread.isActive()) {
+    int read =
+        recvfrom(udp_client->_fd, buf, sizeof(buf), MSG_WAITALL,
+                 reinterpret_cast<sockaddr *>(&udp_client->_servaddr), &len);
+    if (read > 0) {
+      udp_client->_receiver_func_mutex.lock();
+      SleepyDiscord::GenericUDPClient::ReceiveHandler handler =
+          udp_client->receive_handler;
+      udp_client->_receiver_func_mutex.unlock();
 
-    std::vector<uint8_t> ret(buf, buf + read);
-    if (handler) {
-      handler(ret);
-    }
-
-    Barrier *barrier = udp_client->_sync_barrier.exchange(nullptr);
-    if (barrier) {
-      udp_client->_sync_buf = std::move(ret);
-      barrierWait(barrier);
+      std::vector<uint8_t> ret(buf, buf + read);
+      if (handler) {
+        handler(ret);
+      }
+    } else {
+      svcSleepThread(
+          2e+7);  // Always sleep for some time. Otherwise it might crash.
     }
   }
 }
 
 DiscordUDPClient::DiscordUDPClient()
-    : _receive_thread(this, receive_thread, 0x4000), _sync_barrier(nullptr) {}
+    : _receive_thread(this, receive_thread, 0x4000, false) {}
 
 DiscordUDPClient::~DiscordUDPClient() { disconnect(); }
 
@@ -76,22 +75,4 @@ void DiscordUDPClient::send(const uint8_t *buffer, size_t buffer_length,
   sendto(_fd, reinterpret_cast<const char *>(buffer), buffer_length, 0,
          reinterpret_cast<const sockaddr *>(&_servaddr), sizeof(_servaddr));
   handler();
-}
-
-void DiscordUDPClient::setReceiveHandler(ReceiveHandler handler) {
-  std::scoped_lock lock(_receiver_func_mutex);
-  GenericUDPClient::setReceiveHandler(std::move(handler));
-}
-
-void DiscordUDPClient::unsetReceiveHandler() {
-  std::scoped_lock lock(_receiver_func_mutex);
-  GenericUDPClient::unsetReceiveHandler();
-}
-
-std::vector<uint8_t> DiscordUDPClient::waitForReceive() {
-  Barrier sync_barrier;  // Barrier works like a countdown
-  barrierInit(&sync_barrier, 2);
-  _sync_barrier = &sync_barrier;
-  barrierWait(&sync_barrier);
-  return _sync_buf;
 }
