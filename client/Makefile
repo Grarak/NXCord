@@ -44,6 +44,10 @@ DATA		:=	data
 INCLUDES	:=	include ../include ../external/Plutonium/Plutonium/Output/include
 #ROMFS		:=	romfs
 
+APP_TITLE	:=	NXCord
+APP_AUTHOR	:=	Grarak
+APP_VERSION	:=	0.1-`date +'%Y%m%d'`
+
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
