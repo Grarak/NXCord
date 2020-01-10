@@ -18,7 +18,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 TARGET		:=	$(notdir $(CURDIR))
 SOURCES		:=	src
 DATA		:=	data
-INCLUDES	:=	../include ../external/sleepy-discord/include \
+INCLUDES	:=	../include ../wslay_build/include ../external/sleepy-discord/include \
 				../external/sleepy-discord/include/sleepy_discord/IncludeNonexistent \
 				../external/SimpleIniParser/include
 
@@ -37,7 +37,6 @@ CFLAGS	+=	$(INCLUDE) -D__SWITCH__ \
 			`aarch64-none-elf-pkg-config --cflags opus` \
 			`aarch64-none-elf-pkg-config --cflags libsodium` \
 			-DSLEEPY_CUSTOM_CLIENT -DSLEEPY_VOICE_ENABLED \
-			`aarch64-none-elf-pkg-config --cflags libwslay` \
 			`aarch64-none-elf-pkg-config --cflags zlib`
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17

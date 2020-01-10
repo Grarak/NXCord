@@ -1,0 +1,12 @@
+[submodule "external/sleepy-discord"]
+	path = external/sleepy-discord
+	url = git@github.com:Grarak/sleepy-discord.git
+[submodule "external/Atmosphere-libs"]
+	path = external/Atmosphere-libs
+	url = git@github.com:Atmosphere-NX/Atmosphere-libs.git
+[submodule "external/Plutonium"]
+	path = external/Plutonium
+	url = git@github.com:XorTroll/Plutonium.git
+[submodule "external/SimpleIniParser"]
+	path = external/SimpleIniParser
+	url = git@github.com:AtlasNX/SimpleIniParser.git
