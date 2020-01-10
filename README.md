@@ -12,91 +12,27 @@ Currently WIP and not really usable for regular people. Also Discord's TOS forbi
 | Receive voice   | Partially | 90% - When multiple people speak, audio will bug out. Wrong mixing? |
 | Send voice      | Yes       | 100%                   |
 | Sysmodule       | Yes       | 100%                   |
-| GUI             | No        | 0%                     |
-| IPC             | No        | 0%                     |
+| GUI             | Yes       | 10% - Really basic UI for now. |
+| IPC             | Yes       | 5%                     |
 
-## Build
-For build you need to install a few dependencies first.
-- libnx (pacman)
-- switch-libsodium (pacman)
-- switch-libopus (pacman)
-- switch-mbedtls (pacman)
-- switch-zlib (pacman)
-- wslay
-- sleepy-discord
+## Dependencies
+For building you need to install dependencies first.
 
-### Building wslay
-And use this PKGBUILD file:
-```pkgname=switch-libwslay
-pkgver=1.1.0
-pkgrel=1
-pkgdesc='The WebSocket library in C '
-arch=('any')
-url='https://tatsuhiro-t.github.io/wslay/'
-license=('MIT')
-options=(!strip libtool staticlibs)
-makedepends=('devkitpro-pkgbuild-helpers')
-source=("https://github.com/tatsuhiro-t/wslay/releases/download/release-${pkgver}/wslay-${pkgver}.tar.gz")
-sha256sums=('0de975a31818f1c660fa3c674b17bbcbda6ad9c866402ac8ab46a1847325118e')
-groups=('switch-portlibs')
-
-build() {
-  cd wslay-${pkgver}
-
-  source /opt/devkitpro/switchvars.sh
-
-  ./configure --prefix="${PORTLIBS_PREFIX}" --host=aarch64-none-elf \
-    --disable-shared --enable-static
-  make
-}
-
-package() {
-  cd wslay-${pkgver}
-
-  source /opt/devkitpro/switchvars.sh
-
-  make DESTDIR="$pkgdir" install
-
-  # license
-  install -Dm644 LICENSE "$pkgdir"${PORTLIBS_PREFIX}/licenses/$pkgname/LICENSE
-}
+Assuming you have devkitpro and libnx installed, just run:
 ```
-
-### Building sleepy-discord
-```
-$ git clone https://github.com/Grarak/sleepy-discord.git -b develop
-$ cd sleepy-discord/buildtools
-$ make -f Makefile.switch
-```
-Then copy the generated files to your portlibs folder.
-Also create this pc file there.
-```
-# sleepy_discord installed pkg-config file
-
-prefix=/opt/devkitpro/portlibs/switch
-exec_prefix=${prefix}
-libdir=${exec_prefix}/lib
-includedir=${prefix}/include
-
-Name: sleepy_discord
-Description:
-Version: 1.4
-Requires: opus libsodium
-Conflicts:
-Libs: -L${libdir} -lsleepy_discord
-Cflags: -I${includedir} -I${includedir}/sleepy_discord/IncludeNonexistent
+(dkp-)pacman -S devkitpro-pkgbuild-helpers switch-pkg-config switch-libsodium switch-mbedtls switch-zlib switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-sdl2_gfx switch-sdl2_mixer switch-mesa switch-glad switch-glm switch-libdrm_nouveau switch-libwebp switch-libpng switch-freetype switch-bzip2 switch-libjpeg-turbo switch-opusfile switch-libopus
 ```
 
 ### Building NXCord
-After installing all the dependencies, you need to define your
-discord token first.
 ```
-$ echo <your_token> > sysmodule/.token
+git clone --recurse-submodules git@github.com:Grarak/NXCord.git
+cd NXCord
+make
 ```
-Without defining this first you might run into problems during runtime.
-Executing ```make``` should be enough to generate a nsp file.
-If you want to build the sysmodule as nro file:
+
+Since IPC is not fully done yet client only works with nxcord library bundled in. You can create such build with:
 ```
-$ cd sysmodule
-$ make applet
+$ cd client
+$ make standalone
 ```
+But make sure to have dependencies installed and built first.
