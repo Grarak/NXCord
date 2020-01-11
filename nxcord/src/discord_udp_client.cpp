@@ -12,11 +12,16 @@ void receive_thread(DiscordUDPClient *udp_client) {
   size_t buf_size = 1920;
   uint8_t buf[buf_size];
   socklen_t len;
+  bool first_read = true;
 
   while (udp_client->_receive_thread.isActive()) {
     int read =
         recvfrom(udp_client->_fd, buf, sizeof(buf), MSG_WAITALL,
                  reinterpret_cast<sockaddr *>(&udp_client->_servaddr), &len);
+    if (first_read) {
+      Logger::write("UDP first read %d\n", read);
+      first_read = false;
+    }
     if (read > 0) {
       udp_client->_receiver_func_mutex.lock();
       SleepyDiscord::GenericUDPClient::ReceiveHandler handler =
