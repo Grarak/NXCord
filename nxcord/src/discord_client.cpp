@@ -91,6 +91,7 @@ void DiscordClient::send(std::string message,
   if (connection) {
     auto discord_websocket =
         std::static_pointer_cast<DiscordWebsocket>(connection);
+    std::scoped_lock lock(_websocket_send_mutex);
     int ret = discord_websocket->queue_message(message);
     if (ret != 0) {  // error
       Logger::write("Send error: ");

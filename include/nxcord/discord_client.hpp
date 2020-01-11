@@ -1,6 +1,8 @@
 #pragma once
 #include <sleepy_discord/sleepy_discord.h>
 
+#include <mutex>
+
 class DiscordScheduleHandler;
 class DiscordClient : public SleepyDiscord::BaseDiscordClient {
  private:
@@ -10,6 +12,7 @@ class DiscordClient : public SleepyDiscord::BaseDiscordClient {
       "https://discordapp.com/api/v6/auth/mfa/totp";
 
   std::string _ticket;
+  std::mutex _websocket_send_mutex;
 
   bool connect(const std::string &, GenericMessageReceiver *,
                SleepyDiscord::WebsocketConnection &) override;
