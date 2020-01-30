@@ -71,11 +71,6 @@ void player_thread(NXCordAudioPlayer* audio_player) {
     }
   }
 
-  /*std::vector<SleepyDiscord::AudioSample> audio_vector(buf, buf +
-  frame_size); audio_player->client->audio_mutex.lock();
-  audio_player->client->audio_out.push(std::move(audio_vector));
-  audio_player->client->audio_mutex.unlock();*/
-
   AudioOutBuffer* audout_released_buf = nullptr;
   audoutPlayBuffer(&audio_player->_audout_buf, &audout_released_buf);
 
@@ -120,7 +115,7 @@ void NXCordAudioPlayer::queue(
     const SleepyDiscord::AudioTransmissionDetails& details) {
   std::scoped_lock lock(_queue_mutex);
   std::queue<AudioPacket>& queue = _queue[details.ssrc()];
-  while (queue.size() > 10) {
+  while (queue.size() > 5) {
     queue.pop();
   }
   queue.push(AudioPacket{details.ssrc(), audio});
