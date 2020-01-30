@@ -11,11 +11,11 @@ Currently WIP and not really usable for regular people. Also Discord's TOS forbi
 | Receive content | Yes       | 100%                    |
 | Send content    | Yes       | 100%                    |
 | UDP connection  | Yes       | 100%                    |
-| Receive voice   | Partially | 90% - When multiple people speak, audio will bug out. Wrong mixing? |
-| Send voice      | Yes       | 100%                   |
-| Sysmodule       | Yes       | 100%                   |
+| Receive voice   | Yes       | 100%                    |
+| Send voice      | Yes       | 100%                    |
+| Sysmodule       | Yes       | 100%                    |
 | GUI             | Yes       | 10% - Really basic UI for now. |
-| IPC             | Yes       | 5%                     |
+| IPC             | Yes       | 5%                      |
 
 ## Dependencies
 For building you need to install dependencies first.
