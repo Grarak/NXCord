@@ -4,6 +4,7 @@ endif
 
 WSLAY_NAME := "wslay-1.1.0"
 WSLAY_LINK := "https://github.com/tatsuhiro-t/wslay/releases/download/release-1.1.0/${WSLAY_NAME}.tar.gz"
+SHELL := /bin/bash
 
 .PHONY: wslay simple_ini_parser sleepy_discord nxcord submodules plutonium stratosphere client sysmodule all clean
 
@@ -25,8 +26,8 @@ wslay:
 	@if [ ! -f $(WSLAY_NAME)/Makefile ];then cd $(WSLAY_NAME) && autoreconf -i && automake && autoconf && \
 	source $(DEVKITPRO)/switchvars.sh && \
 	./configure --prefix=$(CURDIR)/wslay_build --host=aarch64-none-elf --disable-shared --enable-static;fi
-	@source $(DEVKITPRO)/switchvars.sh && $(MAKE) -C $(WSLAY_NAME)/
-	@source $(DEVKITPRO)/switchvars.sh && $(MAKE) -C $(WSLAY_NAME)/ install
+	source $(DEVKITPRO)/switchvars.sh && $(MAKE) -C $(WSLAY_NAME)/
+	source $(DEVKITPRO)/switchvars.sh && $(MAKE) -C $(WSLAY_NAME)/ install
 
 simple_ini_parser:
 	@$(MAKE) -C external/SimpleIniParser/
