@@ -1,5 +1,6 @@
 #pragma once
 
+#include <common/utils.hpp>
 #include <pu/Plutonium>
 
 #include "elements/ui_element_edit_text.hpp"
@@ -14,6 +15,8 @@ class UILoginLayout : public UICustomLayout {
   UIElementEditText::Ref _password_edit_text;
   Button::Ref _login_button;
   TextBlock::Ref _error_text;
+
+  time_t _token_looked_up = 0;
 
  public:
   UILoginLayout(const Interface &interface);

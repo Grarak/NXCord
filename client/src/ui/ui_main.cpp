@@ -60,6 +60,7 @@ void UIMain::OnLoad() {
           !_interface->isConnected()) {
         showConnecting();
       }
+      _connection_looked_up = current_time;
     }
   });
 
