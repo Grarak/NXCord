@@ -37,25 +37,8 @@ std::string_view log_name = "nxcord-client";
 
 int main(int argc, char *argv[]) {
   {
+    Result rc;
 #ifdef STANDALONE
-    SocketInitConfig sockConf = {
-        .bsdsockets_version = 1,
-
-        .tcp_tx_buf_size = 0x800,
-        .tcp_rx_buf_size = 0x1000,
-        .tcp_tx_buf_max_size = 0x2EE0,
-        .tcp_rx_buf_max_size = 0x2EE0,
-
-        .udp_tx_buf_size = 0x800,
-        .udp_rx_buf_size = 0x1000,
-
-        .sb_efficiency = 4,
-    };
-    Result rc = socketInitialize(&sockConf);
-    if (R_FAILED(rc)) {
-      fatalThrow(rc);
-    }
-
     rc = csrngInitialize();
     if (R_FAILED(rc)) {
       fatalThrow(rc);
@@ -70,9 +53,27 @@ int main(int argc, char *argv[]) {
     if (R_FAILED(rc)) {
       fatalThrow(rc);
     }
+#endif
+
+    SocketInitConfig sockConf = {
+        .bsdsockets_version = 1,
+
+        .tcp_tx_buf_size = 0x800,
+        .tcp_rx_buf_size = 0x1000,
+        .tcp_tx_buf_max_size = 0x2EE0,
+        .tcp_rx_buf_max_size = 0x2EE0,
+
+        .udp_tx_buf_size = 0x800,
+        .udp_rx_buf_size = 0x1000,
+
+        .sb_efficiency = 4,
+    };
+    rc = socketInitialize(&sockConf);
+    if (R_FAILED(rc)) {
+      fatalThrow(rc);
+    }
 
     nxlinkStdio();
-#endif
 
     std::shared_ptr<NXCordComInterface> interface = std::make_shared<
 #ifdef STANDALONE
