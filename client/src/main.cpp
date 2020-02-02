@@ -36,45 +36,45 @@ std::string_view log_name = "nxcord-client";
 }
 
 int main(int argc, char *argv[]) {
-  {
-    Result rc;
+  Result rc;
 #ifdef STANDALONE
-    rc = csrngInitialize();
-    if (R_FAILED(rc)) {
-      fatalThrow(rc);
-    }
+  rc = csrngInitialize();
+  if (R_FAILED(rc)) {
+    fatalThrow(rc);
+  }
 
-    rc = audoutInitialize();
-    if (R_FAILED(rc)) {
-      fatalThrow(rc);
-    }
+  rc = audoutInitialize();
+  if (R_FAILED(rc)) {
+    fatalThrow(rc);
+  }
 
-    rc = audinInitialize();
-    if (R_FAILED(rc)) {
-      fatalThrow(rc);
-    }
+  rc = audinInitialize();
+  if (R_FAILED(rc)) {
+    fatalThrow(rc);
+  }
 #endif
 
-    SocketInitConfig sockConf = {
-        .bsdsockets_version = 1,
+  SocketInitConfig sockConf = {
+      .bsdsockets_version = 1,
 
-        .tcp_tx_buf_size = 0x800,
-        .tcp_rx_buf_size = 0x1000,
-        .tcp_tx_buf_max_size = 0x2EE0,
-        .tcp_rx_buf_max_size = 0x2EE0,
+      .tcp_tx_buf_size = 0x800,
+      .tcp_rx_buf_size = 0x1000,
+      .tcp_tx_buf_max_size = 0x2EE0,
+      .tcp_rx_buf_max_size = 0x2EE0,
 
-        .udp_tx_buf_size = 0x800,
-        .udp_rx_buf_size = 0x1000,
+      .udp_tx_buf_size = 0x800,
+      .udp_rx_buf_size = 0x1000,
 
-        .sb_efficiency = 4,
-    };
-    rc = socketInitialize(&sockConf);
-    if (R_FAILED(rc)) {
-      fatalThrow(rc);
-    }
+      .sb_efficiency = 4,
+  };
+  rc = socketInitialize(&sockConf);
+  if (R_FAILED(rc)) {
+    fatalThrow(rc);
+  }
 
-    nxlinkStdio();
+  nxlinkStdio();
 
+  {
     std::shared_ptr<NXCordComInterface> interface = std::make_shared<
 #ifdef STANDALONE
         StandaloneClient
@@ -93,11 +93,11 @@ int main(int argc, char *argv[]) {
   }
 
   Logger::write("Closing services\n");
+  socketExit();
 #ifdef STANDALONE
   audinExit();
   audoutExit();
   csrngExit();
-  socketExit();
 #endif
   return 0;
 }
