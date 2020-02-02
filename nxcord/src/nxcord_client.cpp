@@ -87,6 +87,7 @@ void NXCordClient::onReady(SleepyDiscord::Ready readyData) {
 
 void NXCordClient::onResumed() {
   Logger::write("NXCordClient: onResume\n");
+  _ready = true;
   _channels.clear();
 
   _current_voice_connection = nullptr;

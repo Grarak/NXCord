@@ -142,7 +142,7 @@ void DiscordClient::stopClient() {
 bool DiscordClient::setLoginCredentials(const std::string &email,
                                         const std::string &password,
                                         bool *has2fa, std::string *error) {
-  quit(false);
+  quit();
 
   DiscordSession session;
   session.setUrl(std::string(loginURL));
@@ -240,7 +240,9 @@ bool DiscordClient::submit2faTicket(const std::string &code) {
 }
 
 void DiscordClient::startConnection() {
-  schedule([this]() { start(_token, 1); }, 0);
+  if (!connection) {
+    schedule([this]() { start(_token, 1); }, 0);
+  }
 }
 
 void DiscordClient::tick() {
