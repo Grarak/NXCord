@@ -79,6 +79,8 @@ class NXCordClient : public DiscordClient {
 
   void startConnection() override;
   inline bool isConnected() const { return _ready && connection != nullptr; }
+  inline bool isConnecting() const { return !isConnected() && !isQuiting(); }
+
   inline void logout() {
     quit();
     _token = "";

@@ -20,6 +20,7 @@ class ResultListener : public UIResultListener {
   void onResultLogin() override;
   void onResultLoggedIn() override;
   void onResult2fa() override;
+  void onResultConnecting() override;
   void onResultConnected() override;
   void onResultServerClick(const IPCStruct::DiscordServer& server) override;
   void onResultNoChannels();
@@ -32,6 +33,7 @@ class UIMain : public pu::ui::Application {
     Login,
     Login_2fa,
     Logged_in,
+    Connecting,
     Connected,
     ShowChannels,
   };
@@ -46,6 +48,7 @@ class UIMain : public pu::ui::Application {
 
   void showLogin();
   void showLogin2fa();
+  void showLoggedIn();
   void showConnecting();
   void showServers();
   void showChannels(const IPCStruct::DiscordServer& server);

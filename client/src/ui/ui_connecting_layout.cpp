@@ -5,7 +5,7 @@
 UIConnectingLayout::UIConnectingLayout(const Interface& interface)
     : UICustomLayout(interface) {
   _connecting_text =
-      TextBlock::New(0, 0, "Establishing connection...Press X to logout");
+      TextBlock::New(0, 0, "Establishing connection...Press X to stop");
   _connecting_text->SetX(1280 / 2 - _connecting_text->GetTextWidth() / 2);
   _connecting_text->SetY(720 / 2 - _connecting_text->GetTextHeight() / 2);
 
@@ -26,8 +26,8 @@ UIConnectingLayout::UIConnectingLayout(const Interface& interface)
 
   SetOnInput([this](u64 Down, u64 Up, u64 Held, pu::ui::Touch Pos) {
     if (Down & KEY_X) {
-      _interface->logout();
-      onResultLogin();
+      _interface->stopConnection();
+      onResultLoggedIn();
     }
   });
 

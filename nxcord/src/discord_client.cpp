@@ -18,6 +18,7 @@ DiscordClient::DiscordClient() {
   // Create dummy variables here, so linker won't omit them
   DiscordUDPClient client;
   OpusDecoder opusDecoder(true);
+  quit(false, true);
 }
 
 DiscordClient::~DiscordClient() { quit(); }

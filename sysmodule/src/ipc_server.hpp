@@ -22,6 +22,7 @@ class NXCordService : public ams::sf::IServiceObject {
   }
 
   ams::Result IsConnected(const ams::sf::OutBuffer& out_path);
+  ams::Result IsConnecting(const ams::sf::OutBuffer& out_path);
   ams::Result AttemptLogin(const ams::sf::InBuffer& in_path,
                            const ams::sf::OutBuffer& out_path);
   ams::Result Submit2faCode(const ams::sf::InBuffer& in_path,
@@ -40,6 +41,7 @@ class NXCordService : public ams::sf::IServiceObject {
  public:
   DEFINE_SERVICE_DISPATCH_TABLE{
       MAKE_SERVICE_COMMAND_META(IsConnected),
+      MAKE_SERVICE_COMMAND_META(IsConnecting),
       MAKE_SERVICE_COMMAND_META(AttemptLogin),
       MAKE_SERVICE_COMMAND_META(Submit2faCode),
       MAKE_SERVICE_COMMAND_META(TokenAvailable),

@@ -9,6 +9,7 @@ class NXCordComInterface {
   virtual ~NXCordComInterface() = default;
 
   virtual bool isConnected() = 0;
+  virtual bool isConnecting() = 0;
   virtual IPCStruct::LoginResult attemptLogin(
       const IPCStruct::Login& login) = 0;
   virtual bool submit2faTicket(const std::string& code) = 0;

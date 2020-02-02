@@ -17,6 +17,7 @@ class UIResultListener {
   virtual void onResultLogin() = 0;
   virtual void onResultLoggedIn() = 0;
   virtual void onResult2fa() = 0;
+  virtual void onResultConnecting() = 0;
   virtual void onResultConnected() = 0;
   virtual void onResultServerClick(const IPCStruct::DiscordServer& server) = 0;
   virtual void onResultNoChannels() = 0;
@@ -43,6 +44,7 @@ class UIResultContainer {
   DELEGATE_LISTENER(onResultLogin)
   DELEGATE_LISTENER(onResultLoggedIn)
   DELEGATE_LISTENER(onResult2fa)
+  DELEGATE_LISTENER(onResultConnecting)
   DELEGATE_LISTENER(onResultConnected)
   DELEGATE_LISTENER(onResultNoChannels)
 

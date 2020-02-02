@@ -81,6 +81,10 @@ class IPCClient : public NXCordComInterface {
     return sendOut<bool>(CommandId::IsConnected);
   }
 
+  inline bool isConnecting() override {
+    return sendOut<bool>(CommandId::IsConnecting);
+  }
+
   inline IPCStruct::LoginResult attemptLogin(
       const IPCStruct::Login &login) override {
     return sendInOut<IPCStruct::LoginResult, IPCStruct::Login>(

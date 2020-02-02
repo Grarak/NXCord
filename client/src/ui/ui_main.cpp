@@ -2,6 +2,7 @@
 
 #include "ui_channels_layout.hpp"
 #include "ui_connecting_layout.hpp"
+#include "ui_logged_in.hpp"
 #include "ui_login_2fa_layout.hpp"
 #include "ui_login_layout.hpp"
 #include "ui_main.hpp"
@@ -12,16 +13,18 @@ ResultListener::ResultListener(UIMain& uimain) : _ui_main(uimain) {}
 
 void ResultListener::onResultLogin() { _ui_main.showLogin(); }
 
-void ResultListener::onResultLoggedIn() { _ui_main.showConnecting(); }
+void ResultListener::onResultLoggedIn() { _ui_main.showLoggedIn(); }
 
 void ResultListener::onResult2fa() { _ui_main.showLogin2fa(); }
+
+void ResultListener::onResultConnecting() { _ui_main.showConnecting(); }
 
 void ResultListener::onResultConnected() {
   _ui_main.showServers();
   _ui_main.CreateShowDialog(
       "Info",
       "A : Confirm\nB : Back\n- : Disconnect from current voice "
-      "channel\n+ : Exit",
+      "channel\n+ : Exit\nX: Disconnect",
       {"Ok"}, false);
 }
 
@@ -57,7 +60,7 @@ void UIMain::OnLoad() {
         current_time - _connection_looked_up >= 1000) {
       if ((_current_state == UIState::Connected ||
            _current_state == UIState::ShowChannels) &&
-          !_interface->isConnected()) {
+          _interface->isConnecting()) {
         showConnecting();
       }
       _connection_looked_up = current_time;
@@ -74,6 +77,10 @@ void UIMain::OnLoad() {
           break;
         case UIState::Logged_in:
           break;
+        case UIState::Connecting:
+          _interface->stopConnection();
+          showLoggedIn();
+          break;
         case UIState::Connected:
           break;
         case UIState::ShowChannels:
@@ -87,6 +94,23 @@ void UIMain::OnLoad() {
           _interface->disconnectVoiceChannel();
         }
       }
+    } else if (Down & KEY_X) {
+      switch (_current_state) {
+        case UIState::Logged_in:
+          _interface->logout();
+          showLogin();
+          break;
+        case UIState::Connected:
+        case UIState::ShowChannels:
+          if (CreateShowDialog("Confirm", "Do you want to disconnect?",
+                               {"Yes", "No"}, false) == 0) {
+            _interface->stopConnection();
+            showLoggedIn();
+          }
+          break;
+        default:
+          break;
+      }
     } else if (Down & KEY_PLUS) {
       Close();
     }
@@ -99,8 +123,12 @@ void UIMain::showLogin2fa() {
   loadCustomLayout<UILogin2faLayout>(UIState::Login_2fa);
 }
 
+void UIMain::showLoggedIn() {
+  loadCustomLayout<UILoggedIn>(UIState::Logged_in);
+}
+
 void UIMain::showConnecting() {
-  loadCustomLayout<UIConnectingLayout>(UIState::Logged_in);
+  loadCustomLayout<UIConnectingLayout>(UIState::Connecting);
 }
 
 void UIMain::showServers() {

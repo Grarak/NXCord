@@ -8,17 +8,18 @@
 #define IPC_COMMAND_ENUM          \
   enum class CommandId {          \
     IsConnected = 0,              \
-    AttemptLogin = 1,             \
-    Submit2faCode = 2,            \
-    TokenAvailable = 3,           \
-    StartConnection = 4,          \
-    StopConnection = 5,           \
-    GetServers = 6,               \
-    GetChannels = 7,              \
-    JoinVoiceChannel = 8,         \
-    DisconnectVoiceChannel = 9,   \
-    IsConnectedVoiceChannel = 10, \
-    Logout = 11,                  \
+    IsConnecting = 1,             \
+    AttemptLogin = 2,             \
+    Submit2faCode = 3,            \
+    TokenAvailable = 4,           \
+    StartConnection = 5,          \
+    StopConnection = 6,           \
+    GetServers = 7,               \
+    GetChannels = 8,              \
+    JoinVoiceChannel = 9,         \
+    DisconnectVoiceChannel = 10,  \
+    IsConnectedVoiceChannel = 11, \
+    Logout = 12,                  \
   };
 
 namespace IPCStruct {

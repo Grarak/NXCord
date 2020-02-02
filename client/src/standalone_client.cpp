@@ -34,6 +34,11 @@ bool StandaloneClient::isConnected() {
   return _nxcord_client.isConnected();
 }
 
+bool StandaloneClient::isConnecting() {
+  LOCK_CLIENT
+  return _nxcord_client.isConnecting();
+}
+
 IPCStruct::LoginResult StandaloneClient::attemptLogin(
     const IPCStruct::Login &login) {
   LOCK_CLIENT

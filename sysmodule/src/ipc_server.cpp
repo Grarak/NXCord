@@ -11,6 +11,13 @@ ams::Result NXCordService::IsConnected(const ams::sf::OutBuffer& out_path) {
   return ams::ResultSuccess();
 }
 
+ams::Result NXCordService::IsConnecting(const ams::sf::OutBuffer& out_path) {
+  IPCServer::instance->executeFunction([this, &out_path](NXCordClient& client) {
+    setOut<bool>(out_path, client.isConnecting());
+  });
+  return ams::ResultSuccess();
+}
+
 ams::Result NXCordService::AttemptLogin(const ams::sf::InBuffer& in_path,
                                         const ams::sf::OutBuffer& out_path) {
   auto& login = getIn<IPCStruct::Login>(in_path);
