@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sleepy_discord/sleepy_discord.h>
+#include <switch.h>
 
 #include <common/loop_thread.hpp>
 #include <mutex>

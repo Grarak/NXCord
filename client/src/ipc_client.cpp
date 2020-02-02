@@ -11,50 +11,43 @@ IPCClient::IPCClient() {
 
 IPCClient::~IPCClient() { serviceClose(&_service); }
 
-bool IPCClient::isConnected() {
-  bool connected;
-  Result rc = serviceDispatchOut(
-      &_service, static_cast<int>(CommandId::IsConnected), connected);
-  printf("isConnected: %s 0x%x\n", connected ? "true" : "false", rc);
-  return connected;
+bool IPCClient::submit2faTicket(const std::string &code) {
+  char code_array[code.size() + 1];
+  strcpy(code_array, code.c_str());
+  code_array[code.size()] = '\0';
+  return sendInOut<char *, bool>(CommandId::Submit2faCode, code_array);
 }
-
-IPCStruct::LoginResult IPCClient::attemptLogin(const IPCStruct::Login& login) {
-  int in = 0;
-  Result rc = serviceDispatchIn(
-      &_service, static_cast<int>(CommandId::AttemptLogin), in,
-      .buffer_attrs = {SfBufferAttr_In | SfBufferAttr_HipcMapAlias},
-      .buffers = {{&login, sizeof(login)}});
-  printf("serviceDispatchIn: 0x%x\n", R_DESCRIPTION(rc));
-
-  IPCStruct::LoginResult ret = {0};
-  ret.success = true;
-  return ret;
-}
-
-bool IPCClient::submit2faTicket(const std::string& code) { return false; }
-
-bool IPCClient::tokenAvailable() { return false; }
-
-void IPCClient::startConnection() {}
-
-void IPCClient::stopConnection() {}
 
 std::vector<IPCStruct::DiscordServer> IPCClient::getServers() {
-  std::vector<IPCStruct::DiscordServer> servers;
-  return servers;
+  std::vector<IPCStruct::DiscordServer> ret;
+  auto servers = sendOut<IPCStruct::DiscordServers>(CommandId::GetServers);
+  for (size_t i = 0; i < servers.size; ++i) {
+    ret.push_back(std::move(servers.servers[i]));
+  }
+  return ret;
 }
 
 std::vector<IPCStruct::DiscordChannel> IPCClient::getChannels(
     int64_t serverId) {
-  std::vector<IPCStruct::DiscordChannel> channels;
-  return channels;
+  std::vector<IPCStruct::DiscordChannel> ret;
+  IPCStruct::DiscordChannelsRequest request = {0, serverId};
+
+  IPCStruct::DiscordChannels channels;
+  while ((channels = sendInOut<IPCStruct::DiscordChannels,
+                               IPCStruct::DiscordChannelsRequest>(
+              CommandId::GetChannels, request))
+             .size > 0) {
+    for (size_t i = 0; i < channels.size; ++i) {
+      ret.push_back(std::move(channels.channels[i]));
+    }
+    ++request.offset;
+  }
+  return ret;
 }
 
-void IPCClient::joinVoiceChannel(int64_t serverId, int64_t channelId) {}
-
-void IPCClient::disconnectVoiceChannel() {}
-
-bool IPCClient::isConnectedVoiceChannel() { return false; }
-
-void IPCClient::logout() {}
+void IPCClient::joinVoiceChannel(int64_t serverId, int64_t channelId) {
+  IPCStruct::DiscordChannel channel;
+  channel.serverId = serverId;
+  channel.id = channelId;
+  sendIn<IPCStruct::DiscordChannel>(CommandId::JoinVoiceChannel, channel);
+}

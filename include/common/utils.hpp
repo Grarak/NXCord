@@ -3,6 +3,13 @@
 #include <chrono>
 #include <string>
 
+#define R_ASSERT(expr) \
+  do {                 \
+    if (!(expr)) {     \
+      std::abort();    \
+    }                  \
+  } while (0)
+
 namespace Utils {
 
 constexpr size_t opus_framesize_bytes =

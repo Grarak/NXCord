@@ -76,14 +76,16 @@ DiscordWebsocket::DiscordWebsocket(
     : _message_processor(message_processor),
       _mbedtls_wrapper(std::move(mbedtls_wrapper)) {
   // Make fd non blocking
-  int status = fcntl(_mbedtls_wrapper->getFd(), F_GETFL);
-  fcntl(_mbedtls_wrapper->getFd(), F_SETFL, status | O_NONBLOCK);
-
-  int val = 1;
-  if (setsockopt(_mbedtls_wrapper->getFd(), IPPROTO_TCP, TCP_NODELAY, &val,
-                 (socklen_t)sizeof(val)) == -1) {
-    Logger::write("Failed setsockopt: TCP_NODELAY");
-  }
+  int flags, r;
+  while ((flags = fcntl(_mbedtls_wrapper->getFd(), F_GETFL, 0)) == -1 &&
+         errno == EINTR)
+    ;
+  while ((r = fcntl(_mbedtls_wrapper->getFd(), F_SETFL, flags | O_NONBLOCK)) ==
+             -1 &&
+         errno == EINTR)
+    ;
+  R_ASSERT(flags != -1);
+  R_ASSERT(r != -1);
 
   _wslay_event_callbacks = {
       recv_callback, send_callback, genmask_callback,     NULL,

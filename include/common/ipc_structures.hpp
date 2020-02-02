@@ -5,11 +5,20 @@
 
 #define SERVICE_NAME "nx:cord"
 
-#define IPC_COMMAND_ENUM \
-  enum class CommandId { \
-    IsConnected = 0,     \
-    AttemptLogin = 1,    \
-    Submit2faCode = 2,   \
+#define IPC_COMMAND_ENUM          \
+  enum class CommandId {          \
+    IsConnected = 0,              \
+    AttemptLogin = 1,             \
+    Submit2faCode = 2,            \
+    TokenAvailable = 3,           \
+    StartConnection = 4,          \
+    StopConnection = 5,           \
+    GetServers = 6,               \
+    GetChannels = 7,              \
+    JoinVoiceChannel = 8,         \
+    DisconnectVoiceChannel = 9,   \
+    IsConnectedVoiceChannel = 10, \
+    Logout = 11,                  \
   };
 
 namespace IPCStruct {
@@ -45,5 +54,21 @@ struct DiscordChannel {
   int64_t serverId;
   int64_t id;
   DiscordChannelType type;
+};
+
+struct DiscordServers {
+  size_t size;
+  DiscordServer servers[100];  // 100 is the max number of server you can join
+};
+
+struct DiscordChannelsRequest {
+  size_t offset;
+  int64_t serverId;
+};
+
+struct DiscordChannels {
+  size_t size;
+  DiscordChannel channels[100];  // 500 is the limit of channels, pass them as
+                                 // chunks, otherwise it will get too big
 };
 }  // namespace IPCStruct

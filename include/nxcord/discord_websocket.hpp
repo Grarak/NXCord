@@ -3,6 +3,7 @@
 #include <sleepy_discord/websocket.h>
 #include <wslay/wslay.h>
 
+#include <common/utils.hpp>
 #include <memory>
 
 #include "mbedtls_wrapper.hpp"

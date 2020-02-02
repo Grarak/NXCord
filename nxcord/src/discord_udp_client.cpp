@@ -18,23 +18,22 @@ void receive_thread(DiscordUDPClient *udp_client) {
     int read =
         recvfrom(udp_client->_fd, buf, sizeof(buf), MSG_WAITALL,
                  reinterpret_cast<sockaddr *>(&udp_client->_servaddr), &len);
-    if (first_read) {
-      Logger::write("UDP first read %d\n", read);
-      first_read = false;
-    }
     if (read > 0) {
-      udp_client->_receiver_func_mutex.lock();
-      SleepyDiscord::GenericUDPClient::ReceiveHandler handler =
-          udp_client->receive_handler;
-      udp_client->_receiver_func_mutex.unlock();
-
+      if (first_read) {
+        Logger::write("UDP first read %d\n", read);
+        first_read = false;
+      }
+      SleepyDiscord::GenericUDPClient::ReceiveHandler handler;
+      {
+        std::scoped_lock lock(udp_client->_receiver_func_mutex);
+        handler = udp_client->receive_handler;
+      }
       std::vector<uint8_t> ret(buf, buf + read);
       if (handler) {
         handler(ret);
       }
     } else {
-      svcSleepThread(
-          2e+7);  // Always sleep for some time. Otherwise it might crash.
+      svcSleepThread(2e+7);
     }
   }
 }

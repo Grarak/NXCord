@@ -131,30 +131,17 @@ int main(int argc, char **argv) {
     NXCordClient client;
     auto settings = NXCordSettings::New();
     client.loadSettings(settings);
-    client.startConnection();
+    std::mutex client_mutex;
 #ifndef APPLICATION
-    IPCServer ipc_server;
+    IPCServer ipc_server(client, client_mutex);
 #endif
 
-    bool joined = false;
-
     while (appletMainLoop()) {
-      client.tick();
-
-      if (!joined && client.isConnected()) {
-        const std::vector<IPCStruct::DiscordServer> &servers =
-            client.getCachedServers();
-        if (!servers.empty()) {
-          const std::vector<IPCStruct::DiscordChannel> &channels =
-              client.getCachedChannels(servers[0].id);
-          for (const auto &channel : channels) {
-            if (channel.type == IPCStruct::DiscordChannelType::SERVER_VOICE) {
-              client.joinVoiceChannel(channel.serverId, channel.id);
-              break;
-            }
-          }
-        }
-        joined = true;
+      {
+#ifndef APPLICATION
+        std::scoped_lock lock(client_mutex);
+#endif
+        client.tick();
       }
 
 #ifdef APPLICATION
@@ -165,10 +152,6 @@ int main(int argc, char **argv) {
       }
       consoleUpdate(nullptr);
 #else
-      IPCServer::QueuedFunction function = ipc_server.pollQueuedFunction();
-      if (function) {
-        function(client);
-      }
       svcSleepThread(2e+7);
 #endif
     }

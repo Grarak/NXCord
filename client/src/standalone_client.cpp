@@ -8,9 +8,10 @@
 #include "standalone_client.hpp"
 
 void standalone_client_thread(StandaloneClient *client) {
-  client->_nxcord_client_mutex.lock();
-  client->_nxcord_client.tick();
-  client->_nxcord_client_mutex.unlock();
+  {
+    std::scoped_lock lock(client->_nxcord_client_mutex);
+    client->_nxcord_client.tick();
+  }
   svcSleepThread(2e+7);
 }
 
