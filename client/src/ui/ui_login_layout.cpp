@@ -30,12 +30,9 @@ UILoginLayout::UILoginLayout(const Interface &interface)
   });
 
   AddThread([this]() {
-    time_t current_time = Utils::current_time_millis();
-    if (_token_looked_up == 0 || current_time - _token_looked_up >= 1000) {
-      if (_interface->tokenAvailable()) {
-        onResultLoggedIn();
-      }
-      _token_looked_up = current_time;
+    if (Utils::check_interval(_token_looked_up, 1000),
+        _interface->tokenAvailable()) {
+      onResultLoggedIn();
     }
   });
 

@@ -13,14 +13,9 @@ UIConnectingLayout::UIConnectingLayout(const Interface& interface)
     interface->startConnection();
   }
   AddThread([this]() {
-    time_t current_time = Utils::current_time_millis();
-    // Check for connection every second
-    if (_connection_looked_up == 0 ||
-        current_time - _connection_looked_up >= 1000) {
-      if (_interface->isConnected()) {
-        onResultConnected();
-      }
-      _connection_looked_up = current_time;
+    if (Utils::check_interval(_connection_looked_up, 1000) &&
+        _interface->isConnected()) {
+      onResultConnected();
     }
   });
 

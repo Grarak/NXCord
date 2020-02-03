@@ -7,10 +7,7 @@ UIServersLayout::UIServersLayout(const Interface& interface)
   _server_menu->SetOnFocusColor(pu::ui::Color(0, 0, 0, 0x80));
 
   AddThread([this]() {
-    time_t current_time = Utils::current_time_millis();
-    // Check for new servers each second
-    if (_server_lookup_time == 0 ||
-        current_time - _server_lookup_time >= 1000) {
+    if (Utils::check_interval(_server_lookup_time, 1000)) {
       std::vector<IPCStruct::DiscordServer> new_servers =
           _interface->getServers();
       bool redraw = false;
@@ -35,8 +32,6 @@ UIServersLayout::UIServersLayout(const Interface& interface)
           _server_menu->AddItem(item);
         }
       }
-
-      _server_lookup_time = current_time;
     }
   });
 

@@ -11,10 +11,7 @@ UIChannelsLayout::UIChannelsLayout(const Interface& interface,
   _channels_menu->SetOnFocusColor(pu::ui::Color(0, 0, 0, 0x80));
 
   AddThread([this, server]() {
-    time_t current_time = Utils::current_time_millis();
-    // Check for new channels each second
-    if (_channels_lookup_time == 0 ||
-        current_time - _channels_lookup_time >= 1000) {
+    if (Utils::check_interval(_channels_lookup_time, 1000)) {
       std::vector<IPCStruct::DiscordChannel> new_channels =
           _interface->getChannels(server.id);
       bool redraw = false;
@@ -56,8 +53,6 @@ UIChannelsLayout::UIChannelsLayout(const Interface& interface,
           _channels_menu->AddItem(item);
         }
       }
-
-      _channels_lookup_time = current_time;
     }
   });
 

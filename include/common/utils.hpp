@@ -27,4 +27,6 @@ const void copy_file(const std::string& srcPath, const std::string& destPath);
 
 const bool file_exists(const std::string& path);
 
+const bool check_interval(time_t& previous_time, time_t interval);
+
 }  // namespace Utils

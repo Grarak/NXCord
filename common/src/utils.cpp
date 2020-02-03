@@ -46,4 +46,13 @@ const bool file_exists(const std::string& path) {
   return access(path.c_str(), F_OK) != -1;
 }
 
+const bool check_interval(time_t& previous_time, time_t interval) {
+  time_t current = current_time_millis();
+  if (previous_time == 0 || current - previous_time >= interval) {
+    previous_time = current;
+    return true;
+  }
+  return false;
+}
+
 }  // namespace Utils

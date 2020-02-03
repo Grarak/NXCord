@@ -20,6 +20,7 @@ void ResultListener::onResult2fa() { _ui_main.showLogin2fa(); }
 void ResultListener::onResultConnecting() { _ui_main.showConnecting(); }
 
 void ResultListener::onResultConnected() {
+  printf("Connected\n");
   _ui_main.showServers();
   _ui_main.CreateShowDialog(
       "Info",
@@ -54,16 +55,11 @@ void UIMain::OnLoad() {
   showLogin();
 
   AddThread([this]() {
-    time_t current_time = Utils::current_time_millis();
-    // Check for connection every second
-    if (_connection_looked_up == 0 ||
-        current_time - _connection_looked_up >= 1000) {
-      if ((_current_state == UIState::Connected ||
-           _current_state == UIState::ShowChannels) &&
-          _interface->isConnecting()) {
-        showConnecting();
-      }
-      _connection_looked_up = current_time;
+    if (Utils::check_interval(_connection_looked_up, 1000) &&
+        (_current_state == UIState::Connected ||
+         _current_state == UIState::ShowChannels) &&
+        _interface->isConnecting()) {
+      showConnecting();
     }
   });
 
