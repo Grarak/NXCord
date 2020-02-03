@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 
 #include <common/logger.hpp>
+#include <cstring>
 #include <nxcord/discord_websocket.hpp>
 
 ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
@@ -64,17 +65,35 @@ void on_msg_recv_callback(wslay_event_context_ptr ctx,
   DiscordWebsocket *discord_websocket =
       static_cast<DiscordWebsocket *>(user_data);
   const char *msg = reinterpret_cast<const char *>(arg->msg);
-  printf("Receive %s\n", std::string(msg, msg + arg->msg_length).c_str());
-  discord_websocket->_message_processor->processMessage(
-      std::string(msg, msg + arg->msg_length));
-  printf("Message processed\n");
+  std::string str_msg;
+
+  if (discord_websocket->_zlib_compress) {
+    std::vector<char> &_zlib_buf = discord_websocket->_zlib_buf;
+    _zlib_buf.insert(_zlib_buf.end(), msg, msg + arg->msg_length);
+    if (arg->msg_length >= 4 &&
+        std::memcmp(msg + arg->msg_length - 4, DiscordWebsocket::zlib_suffix,
+                    4) == 0) {
+      str_msg = discord_websocket->_zlib_wrapper.decompress(_zlib_buf.data(),
+                                                            _zlib_buf.size());
+      _zlib_buf.clear();
+    }
+  } else {
+    str_msg = std::string(msg, msg + arg->msg_length);
+  }
+
+  if (!str_msg.empty()) {
+    // printf("Receive %s\n", str_msg.c_str());
+    discord_websocket->_message_processor->processMessage(str_msg);
+    printf("Message processed\n");
+  }
 }
 
 DiscordWebsocket::DiscordWebsocket(
     SleepyDiscord::GenericMessageReceiver *message_processor,
-    std::unique_ptr<MBedTLSWrapper> &mbedtls_wrapper)
+    std::unique_ptr<MBedTLSWrapper> &mbedtls_wrapper, bool zlib_compress)
     : _message_processor(message_processor),
-      _mbedtls_wrapper(std::move(mbedtls_wrapper)) {
+      _mbedtls_wrapper(std::move(mbedtls_wrapper)),
+      _zlib_compress(zlib_compress) {
   // Make fd non blocking
   int flags, r;
   while ((flags = fcntl(_mbedtls_wrapper->getFd(), F_GETFL, 0)) == -1 &&

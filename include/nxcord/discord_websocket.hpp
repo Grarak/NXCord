@@ -5,13 +5,21 @@
 
 #include <common/utils.hpp>
 #include <memory>
+#include <vector>
 
 #include "mbedtls_wrapper.hpp"
+#include "zlib_wrapper.hpp"
 
 class DiscordWebsocket : public SleepyDiscord::GenericWebsocketConnection {
  private:
+  static constexpr char zlib_suffix[] = {0x0, 0x0, 0xff, 0xff};
+
   SleepyDiscord::GenericMessageReceiver *_message_processor;
   std::unique_ptr<MBedTLSWrapper> _mbedtls_wrapper;
+
+  bool _zlib_compress;
+  std::vector<char> _zlib_buf;
+  ZlibWrapper _zlib_wrapper;
 
   wslay_event_context_ptr _wslay_event_context = nullptr;
   wslay_event_callbacks _wslay_event_callbacks;
@@ -30,7 +38,8 @@ class DiscordWebsocket : public SleepyDiscord::GenericWebsocketConnection {
 
  public:
   DiscordWebsocket(SleepyDiscord::GenericMessageReceiver *message_processor,
-                   std::unique_ptr<MBedTLSWrapper> &mbedtls_wrapper);
+                   std::unique_ptr<MBedTLSWrapper> &mbedtls_wrapper,
+                   bool zlib_compress = false);
   ~DiscordWebsocket() override;
 
   int queue_message(const std::string &message);

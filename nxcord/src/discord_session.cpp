@@ -2,10 +2,10 @@
 #include <switch.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <zlib.h>
 
 #include <common/logger.hpp>
 #include <nxcord/discord_session.hpp>
+#include <nxcord/zlib_wrapper.hpp>
 
 #define NEW_LINE "\r\n"
 constexpr const char* METHOD_NAMES[] = {"POST", "PATCH", "DELETE", "GET",
@@ -243,31 +243,10 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   if (it != response->header.end() && it->second == "gzip") {
     printf("Decompressing body\n");
 
-    std::string decompressed;
-    z_stream infstream;
-    infstream.zalloc = Z_NULL;
-    infstream.zfree = Z_NULL;
-    infstream.avail_in = response->text.size();  // size of input + 1 for
-    infstream.next_in = (Bytef*)response->text.c_str();
+    ZlibWrapper zlib_wrapper;
+    std::string decompressed =
+        zlib_wrapper.decompress(response->text.c_str(), response->text.size());
 
-    inflateInit2(&infstream, (16 + MAX_WBITS));
-    while (true) {
-      infstream.avail_out = buf_size;
-      infstream.next_out = (Bytef*)buf;
-      infstream.total_out = 0;
-
-      ret = inflate(&infstream, Z_SYNC_FLUSH);
-      decompressed.insert(decompressed.end(), buf, buf + infstream.total_out);
-
-      if (ret == Z_STREAM_END) {
-        break;
-      } else if (ret != Z_OK) {
-        response->text =
-            "{\"code\":431,\"message\":\"Couldn't decompress body\"}";
-        return mbedtls_wrapper;
-      }
-    }
-    inflateEnd(&infstream);
     response->text = std::move(decompressed);
   }
 

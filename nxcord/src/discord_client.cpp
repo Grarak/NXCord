@@ -44,8 +44,17 @@ bool DiscordClient::connect(const std::string &uri,
 
   std::string client_key = base64_encode(random_bytes, 16);
 
+  bool zlib_compress = false;
+  std::string real_uri = uri;
+  std::string gateway = "wss://gateway.discord.gg";
+  if (uri.substr(0, gateway.size()) == gateway) {
+    // Enable compression for client websocket
+    real_uri += "&encoding=json&compress=zlib-stream";
+    zlib_compress = true;
+  }
+
   DiscordSession session;
-  session.setUrl(uri);
+  session.setUrl(real_uri);
 
   std::vector<SleepyDiscord::HeaderPair> header = {
       {"Upgrade", "websocket"},
@@ -82,8 +91,8 @@ bool DiscordClient::connect(const std::string &uri,
   }
 
   Logger::write("Connection to websocket established\n");
-  connection =
-      std::make_shared<DiscordWebsocket>(message_processor, mbedtls_wrapper);
+  connection = std::make_shared<DiscordWebsocket>(
+      message_processor, mbedtls_wrapper, zlib_compress);
   return true;
 }
 
