@@ -134,6 +134,7 @@ int main(int argc, char **argv) {
     std::mutex client_mutex;
 #ifndef APPLICATION
     IPCServer ipc_server(client, client_mutex);
+    client.startConnection();
 #endif
 
     while (appletMainLoop()) {
