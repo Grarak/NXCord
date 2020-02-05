@@ -132,9 +132,10 @@ int main(int argc, char **argv) {
     auto settings = NXCordSettings::New();
     client.loadSettings(settings);
     std::mutex client_mutex;
-#ifndef APPLICATION
-    IPCServer ipc_server(client, client_mutex);
+#ifdef APPLICATION
     client.startConnection();
+#else
+    IPCServer ipc_server(client, client_mutex);
 #endif
 
     while (appletMainLoop()) {
