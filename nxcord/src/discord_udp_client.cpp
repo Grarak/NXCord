@@ -9,12 +9,11 @@ SleepyDiscord::CustomInitUDPClient SleepyDiscord::CustomUDPClient::init =
     []() -> SleepyDiscord::GenericUDPClient * { return new DiscordUDPClient; };
 
 void receive_thread(DiscordUDPClient *udp_client) {
-  size_t buf_size = 1920;
-  uint8_t buf[buf_size];
-  socklen_t len;
+  uint8_t buf[1920];
   bool first_read = true;
 
   while (udp_client->_receive_thread.isActive()) {
+    socklen_t len = sizeof(sockaddr_in);
     int read =
         recvfrom(udp_client->_fd, buf, sizeof(buf), MSG_WAITALL,
                  reinterpret_cast<sockaddr *>(&udp_client->_servaddr), &len);
@@ -32,8 +31,8 @@ void receive_thread(DiscordUDPClient *udp_client) {
       if (handler) {
         handler(ret);
       }
-    } else {
-      svcSleepThread(2e+7);
+    } else if (errno != EAGAIN && errno != EWOULDBLOCK) {
+      svcSleepThread(1e+9);
     }
   }
 }
@@ -51,6 +50,12 @@ bool DiscordUDPClient::connect(const std::string &to, const uint16_t port) {
     return false;
   }
 
+  struct timeval timeout;
+  timeout.tv_sec = 1;
+  timeout.tv_usec = 0;
+
+  setsockopt(_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
+
   Logger::write("UDP Connecting to %s:%d %d\n", to.c_str(), port, _fd);
 
   memset(&_servaddr, 0, sizeof(_servaddr));
@@ -59,6 +64,7 @@ bool DiscordUDPClient::connect(const std::string &to, const uint16_t port) {
   _servaddr.sin_addr.s_addr = inet_addr(to.c_str());
 
   _receive_thread.start();
+
   return true;
 }
 
@@ -76,7 +82,10 @@ void DiscordUDPClient::disconnect() {
 
 void DiscordUDPClient::send(const uint8_t *buffer, size_t buffer_length,
                             SendHandler handler) {
-  sendto(_fd, reinterpret_cast<const char *>(buffer), buffer_length, 0,
-         reinterpret_cast<const sockaddr *>(&_servaddr), sizeof(_servaddr));
+  if (_fd >= 0) {
+    sendto(_fd, reinterpret_cast<const char *>(buffer), buffer_length,
+           MSG_DONTWAIT, reinterpret_cast<const sockaddr *>(&_servaddr),
+           sizeof(_servaddr));
+  }
   handler();
 }

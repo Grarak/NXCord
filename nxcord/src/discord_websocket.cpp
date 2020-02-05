@@ -82,7 +82,11 @@ void on_msg_recv_callback(wslay_event_context_ptr ctx,
   }
 
   if (!str_msg.empty()) {
-    // printf("Receive %s\n", str_msg.c_str());
+    std::string log(str_msg.c_str(),
+                    str_msg.c_str() + std::min(str_msg.size(),
+                                               static_cast<size_t>(
+                                                   500)));  // Limit log output
+    printf("Receive %s\n", log.c_str());
     discord_websocket->_message_processor->processMessage(str_msg);
     printf("Message processed\n");
   }
@@ -103,8 +107,7 @@ DiscordWebsocket::DiscordWebsocket(
              -1 &&
          errno == EINTR)
     ;
-  R_ASSERT(flags != -1);
-  R_ASSERT(r != -1);
+  NXC_ASSERT(flags != -1 && r != -1);
 
   _wslay_event_callbacks = {
       recv_callback, send_callback, genmask_callback,     NULL,

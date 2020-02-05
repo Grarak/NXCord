@@ -3,7 +3,7 @@
 #include <chrono>
 #include <string>
 
-#define R_ASSERT(expr) \
+#define NXC_ASSERT(expr) \
   do {                 \
     if (!(expr)) {     \
       std::abort();    \

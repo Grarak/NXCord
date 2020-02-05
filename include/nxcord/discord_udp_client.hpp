@@ -17,6 +17,7 @@ class DiscordUDPClient : public SleepyDiscord::GenericUDPClient {
  private:
   int _fd = -1;
   sockaddr_in _servaddr;
+  bool _first_send = true;
 
   LoopThread<DiscordUDPClient*> _receive_thread;
 

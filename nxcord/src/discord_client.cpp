@@ -93,6 +93,7 @@ bool DiscordClient::connect(const std::string &uri,
   Logger::write("Connection to websocket established\n");
   connection = std::make_shared<DiscordWebsocket>(
       message_processor, mbedtls_wrapper, zlib_compress);
+  message_processor->initialize();
   return true;
 }
 
