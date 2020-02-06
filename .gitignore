@@ -8,3 +8,4 @@ build
 *.nacp
 .token
 /wslay*
+/release.zip
