@@ -24,6 +24,9 @@ So if you are stuck at the *establishing connection* screen, you will have to us
 
 Also right now a lot of features are missing. Head over to [projects](https://github.com/Grarak/NXCord/projects) to see what possible features are planned for the future.
 
+### Microphone
+The switch itself doesn't have any external microphones, so you do need to plug in headphones/earbuds to actually utilise speaking.
+
 ## Dependencies
 For building you need to install dependencies first.
 
