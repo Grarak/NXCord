@@ -20,7 +20,6 @@ void ResultListener::onResult2fa() { _ui_main.showLogin2fa(); }
 void ResultListener::onResultConnecting() { _ui_main.showConnecting(); }
 
 void ResultListener::onResultConnected() {
-  printf("Connected\n");
   _ui_main.showServers();
   _ui_main.CreateShowDialog(
       "Info",

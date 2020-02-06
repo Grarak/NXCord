@@ -241,7 +241,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
 
   auto it = response->header.find("Content-Encoding");
   if (it != response->header.end() && it->second == "gzip") {
-    printf("Decompressing body\n");
+    Logger::write("Decompressing body\n");
 
     ZlibWrapper zlib_wrapper;
     std::string decompressed =
@@ -250,7 +250,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
     response->text = std::move(decompressed);
   }
 
-  printf("Session done %s\n", _url.c_str());
+  Logger::write("Session done %s\n", _url.c_str());
 
   _body = nullptr;
   _headers = nullptr;

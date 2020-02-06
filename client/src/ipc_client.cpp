@@ -6,7 +6,7 @@
 IPCClient::IPCClient() {
   // TODO check for service availability
   Result rc = smGetService(&_service, SERVICE_NAME);
-  printf("smGetService: 0x%x\n", rc);
+  Logger::write("smGetService: 0x%x\n", rc);
 }
 
 IPCClient::~IPCClient() { serviceClose(&_service); }

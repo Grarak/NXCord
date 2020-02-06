@@ -16,7 +16,7 @@ void standalone_client_thread(StandaloneClient *client) {
 }
 
 StandaloneClient::StandaloneClient()
-    : _standalone_client_thread(this, standalone_client_thread, 0x200000) {
+    : _standalone_client_thread(this, standalone_client_thread, 0x100000) {
   Logger::write("Starting new client\n");
 
   auto settings = NXCordSettings::New();
