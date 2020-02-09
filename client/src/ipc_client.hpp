@@ -11,7 +11,7 @@ class IPCClient : public NXCordComInterface {
  private:
   IPC_COMMAND_ENUM
 
-  Service _service;
+  Service _service{};
 
   void send(CommandId command) {
     Result rc = serviceDispatch(&_service, static_cast<int>(command));
@@ -44,7 +44,7 @@ class IPCClient : public NXCordComInterface {
   R sendInOut(CommandId command, const A &in_arg) {
     int placeholder_in_id = 0;
     int placeholder_out_id = 0;
-    R ret;
+    R ret{};
     Result rc = serviceDispatchInOut(
         &_service, static_cast<int>(command), placeholder_in_id,
         placeholder_out_id,
@@ -75,6 +75,7 @@ class IPCClient : public NXCordComInterface {
 
  public:
   IPCClient();
+
   ~IPCClient() override;
 
   inline bool isConnected() override {
@@ -102,6 +103,7 @@ class IPCClient : public NXCordComInterface {
   inline void stopConnection() override { send(CommandId::StopConnection); }
 
   std::vector<IPCStruct::DiscordServer> getServers() override;
+
   std::vector<IPCStruct::DiscordChannel> getChannels(int64_t serverId) override;
 
   void joinVoiceChannel(int64_t serverId, int64_t channelId) override;

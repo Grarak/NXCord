@@ -64,7 +64,7 @@ class NXCordSettings {
   }
 
  public:
-  inline bool valid() const { return _ini_instance != nullptr; }
+  [[nodiscard]] inline bool valid() const { return _ini_instance != nullptr; }
 
   CREATE_SETTING(, token, )
 

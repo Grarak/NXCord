@@ -50,7 +50,7 @@ bool DiscordUDPClient::connect(const std::string &to, const uint16_t port) {
     return false;
   }
 
-  struct timeval timeout;
+  timeval timeout{};
   timeout.tv_sec = 1;
   timeout.tv_usec = 0;
 

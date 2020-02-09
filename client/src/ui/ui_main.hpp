@@ -10,21 +10,29 @@ class UIMain;
 
 class ResultListener : public UIResultListener {
  private:
-  UIMain& _ui_main;
-  ResultListener(UIMain& uimain);
+  UIMain &_ui_main;
+
+  explicit ResultListener(UIMain &uimain);
 
   template <class Listener, class... Args>
-  friend std::shared_ptr<Listener> UIResultListener::New(Args&&... args);
+  friend std::shared_ptr<Listener> UIResultListener::New(Args &&... args);
 
  public:
   void onResultLogin() override;
+
   void onResultLoggedIn() override;
+
   void onResult2fa() override;
+
   void onResultConnecting() override;
+
   void onResultConnected() override;
-  void onResultServerClick(const IPCStruct::DiscordServer& server) override;
-  void onResultNoChannels();
-  bool onDialogJoinVoice();
+
+  void onResultServerClick(const IPCStruct::DiscordServer &server) override;
+
+  void onResultNoChannels() override;
+
+  bool onDialogJoinVoice() override;
 };
 
 class UIMain : public pu::ui::Application {
@@ -47,14 +55,19 @@ class UIMain : public pu::ui::Application {
   time_t _connection_looked_up = 0;
 
   void showLogin();
+
   void showLogin2fa();
+
   void showLoggedIn();
+
   void showConnecting();
+
   void showServers();
-  void showChannels(const IPCStruct::DiscordServer& server);
+
+  void showChannels(const IPCStruct::DiscordServer &server);
 
   template <class Layout, class... Args>
-  void loadCustomLayout(UIState state, Args&&... args);
+  void loadCustomLayout(UIState state, Args &&... args);
 
   friend ResultListener;
 
@@ -62,7 +75,7 @@ class UIMain : public pu::ui::Application {
   using Application::Application;
 
   UIMain(pu::ui::render::Renderer::Ref renderer,
-         const UICustomLayout::Interface& interface);
+         UICustomLayout::Interface interface);
 
   PU_SMART_CTOR(UIMain)
 

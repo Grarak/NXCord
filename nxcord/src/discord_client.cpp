@@ -67,7 +67,7 @@ bool DiscordClient::connect(const std::string &uri,
 
   SleepyDiscord::Response response;
   std::unique_ptr<MBedTLSWrapper> mbedtls_wrapper =
-      std::move(session.request(SleepyDiscord::Get, &response));
+      session.request(SleepyDiscord::Get, &response);
 
   if (response.statusCode !=
       SleepyDiscord::SWITCHING_PROTOCOLS) {  // error check
@@ -225,9 +225,9 @@ bool DiscordClient::submit2faTicket(const std::string &code) {
 
   std::string request_body;
   request_body.reserve(23);
-  request_body += "{\"code\":\"";
+  request_body += R"({"code":")";
   request_body += code;
-  request_body += "\",\"ticket\":\"";
+  request_body += R"(","ticket":")";
   request_body += _ticket;
   request_body += "\"}";
   request_body.reserve(23 + code.size() + _ticket.size());

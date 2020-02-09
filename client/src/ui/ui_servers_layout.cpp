@@ -1,6 +1,6 @@
 #include "ui_servers_layout.hpp"
 
-UIServersLayout::UIServersLayout(const Interface& interface)
+UIServersLayout::UIServersLayout(const Interface &interface)
     : UICustomLayout(interface) {
   _server_menu =
       Menu::New(0, 0, 1280, pu::ui::Color(0xff, 0xff, 0xff, 0xff), 100, 8);
@@ -26,7 +26,7 @@ UIServersLayout::UIServersLayout(const Interface& interface)
 
       if (redraw) {
         _server_menu->ClearItems();
-        for (const auto& server : _servers) {
+        for (const auto &server : _servers) {
           auto item = MenuItem::New(server.name);
           item->AddOnClick([this, &server]() { onResultServerClick(server); });
           _server_menu->AddItem(item);

@@ -4,6 +4,6 @@
 
 namespace Logger {
 
-void write(const char* format, ...);
+void write(const char *format, ...);
 
 }

@@ -5,12 +5,14 @@
 
 class OpusDecoder : public SleepyDiscord::GenericOpusDecoder {
  private:
-  HwopusDecoder _hwdecoder = {0};
+  HwopusDecoder _hwdecoder{};
   bool _dummy;
 
  public:
-  OpusDecoder(bool dummy = false);
+  explicit OpusDecoder(bool dummy = false);
+
   ~OpusDecoder() override;
-  int decodeOpus(uint8_t* encodedData, size_t encodedDataSize,
-                 int16_t* decodedData) override;
+
+  int decodeOpus(uint8_t *encodedData, size_t encodedDataSize,
+                 int16_t *decodedData) override;
 };

@@ -15,19 +15,24 @@ class UIElementEditText : public pu::ui::elm::Element {
     PASSWORD,
   };
 
-  UIElementEditText(s32 x, s32 y, s32 w, s32 h, const pu::String& title,
+  UIElementEditText(s32 x, s32 y, s32 w, s32 h, const pu::String &title,
                     InputType inputType = InputType::NORMAL);
 
   PU_SMART_CTOR(UIElementEditText)
 
   inline s32 GetX() override { return _x; }
+
   inline s32 GetY() override { return _y; }
+
   inline s32 GetWidth() override { return _w; }
+
   inline s32 GetHeight() override { return _h; }
-  void OnRender(pu::ui::render::Renderer::Ref& Drawer, s32 X, s32 Y) override;
+
+  void OnRender(pu::ui::render::Renderer::Ref &Drawer, s32 X, s32 Y) override;
+
   void OnInput(u64 Down, u64 Up, u64 Held, pu::ui::Touch Pos) override;
 
-  inline std::string getInput() const { return _input; }
+  [[nodiscard]] inline std::string getInput() const { return _input; }
 
  private:
   Rectangle::Ref _outer_rec;

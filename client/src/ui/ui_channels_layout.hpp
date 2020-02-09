@@ -16,8 +16,8 @@ class UIChannelsLayout : public UICustomLayout {
   time_t _channels_lookup_time = 0;
 
  public:
-  UIChannelsLayout(const Interface& interface,
-                   const IPCStruct::DiscordServer& server);
+  UIChannelsLayout(const Interface &interface,
+                   const IPCStruct::DiscordServer &server);
 
   PU_SMART_CTOR(UIChannelsLayout)
 };

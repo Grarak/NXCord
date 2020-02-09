@@ -1,9 +1,9 @@
-#include <cstring>
-
 #include "ui_element_edit_text.hpp"
 
+#include <cstring>
+
 UIElementEditText::UIElementEditText(s32 x, s32 y, s32 w, s32 h,
-                                     const pu::String& title,
+                                     const pu::String &title,
                                      InputType inputType)
     : _outer_rec(
           Rectangle::New(x, y, w, h, pu::ui::Color(0xff, 0xff, 0xff, 0xff), 1)),
@@ -15,7 +15,7 @@ UIElementEditText::UIElementEditText(s32 x, s32 y, s32 w, s32 h,
       _h(h),
       _inputType(inputType) {}
 
-void UIElementEditText::OnRender(pu::ui::render::Renderer::Ref& Drawer, s32 X,
+void UIElementEditText::OnRender(pu::ui::render::Renderer::Ref &Drawer, s32 X,
                                  s32 Y) {
   _outer_rec->OnRender(Drawer, X, Y);
   _inner_title_text->OnRender(Drawer, X, Y);

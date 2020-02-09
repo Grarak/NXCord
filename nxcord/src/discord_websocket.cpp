@@ -1,18 +1,15 @@
 #include <fcntl.h>
-#include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <poll.h>
 #include <switch.h>
-#include <sys/socket.h>
 
 #include <common/logger.hpp>
 #include <cstring>
 #include <nxcord/discord_websocket.hpp>
 
 ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
-                      int flags, void *user_data) {
-  DiscordWebsocket *discord_websocket =
-      static_cast<DiscordWebsocket *>(user_data);
+                      int, void *user_data) {
+  auto discord_websocket = static_cast<DiscordWebsocket *>(user_data);
 
   int ret = discord_websocket->_mbedtls_wrapper->read(buf, len);
   if (ret == -1) {
@@ -32,9 +29,8 @@ ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
 }
 
 ssize_t send_callback(wslay_event_context_ptr ctx, const uint8_t *data,
-                      size_t len, int flags, void *user_data) {
-  DiscordWebsocket *discord_websocket =
-      static_cast<DiscordWebsocket *>(user_data);
+                      size_t len, int, void *user_data) {
+  auto discord_websocket = static_cast<DiscordWebsocket *>(user_data);
 
   int ret = discord_websocket->_mbedtls_wrapper->write(data, len);
   if (ret == -1) {
@@ -50,8 +46,8 @@ ssize_t send_callback(wslay_event_context_ptr ctx, const uint8_t *data,
   return ret;
 }
 
-int genmask_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
-                     void *user_data) {
+int genmask_callback(wslay_event_context_ptr, uint8_t *buf, size_t len,
+                     void *) {
   if (R_FAILED(csrngGetRandomBytes(buf, len))) {
     Logger::write("Failed to generate random bytes\n");
     return -1;
@@ -59,11 +55,10 @@ int genmask_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
   return 0;
 }
 
-void on_msg_recv_callback(wslay_event_context_ptr ctx,
+void on_msg_recv_callback(wslay_event_context_ptr,
                           const wslay_event_on_msg_recv_arg *arg,
                           void *user_data) {
-  DiscordWebsocket *discord_websocket =
-      static_cast<DiscordWebsocket *>(user_data);
+  auto discord_websocket = static_cast<DiscordWebsocket *>(user_data);
   const char *msg = reinterpret_cast<const char *>(arg->msg);
   std::string str_msg;
 
@@ -110,8 +105,8 @@ DiscordWebsocket::DiscordWebsocket(
   NXC_ASSERT(flags != -1 && r != -1);
 
   _wslay_event_callbacks = {
-      recv_callback, send_callback, genmask_callback,     NULL,
-      NULL,          NULL,          on_msg_recv_callback,
+      recv_callback, send_callback, genmask_callback,     nullptr,
+      nullptr,       nullptr,       on_msg_recv_callback,
   };
 
   wslay_event_context_client_init(&_wslay_event_context,
@@ -127,7 +122,8 @@ int DiscordWebsocket::queue_message(const std::string &message) {
   return wslay_event_queue_msg(_wslay_event_context, &msg);
 }
 
-void DiscordWebsocket::disconnect(unsigned int code, const std::string reason) {
+void DiscordWebsocket::disconnect(unsigned int code,
+                                  const std::string &reason) {
   if (_wslay_event_context) {
     wslay_event_queue_close(_wslay_event_context, code,
                             reinterpret_cast<const uint8_t *>(reason.c_str()),
@@ -138,8 +134,8 @@ void DiscordWebsocket::disconnect(unsigned int code, const std::string reason) {
   }
 }
 
-bool DiscordWebsocket::pollSocket(int events) {
-  pollfd pol;
+bool DiscordWebsocket::pollSocket(uint16_t events) {
+  pollfd pol{};
   pol.fd = _mbedtls_wrapper->getFd();
   pol.events = events;
 

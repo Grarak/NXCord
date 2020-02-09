@@ -1,7 +1,7 @@
 #include "ui_channels_layout.hpp"
 
-UIChannelsLayout::UIChannelsLayout(const Interface& interface,
-                                   const IPCStruct::DiscordServer& server)
+UIChannelsLayout::UIChannelsLayout(const Interface &interface,
+                                   const IPCStruct::DiscordServer &server)
     : UICustomLayout(interface) {
   auto server_name_text =
       TextBlock::New(0, 0, server.name + std::string(" - Voice channels"));
@@ -17,7 +17,7 @@ UIChannelsLayout::UIChannelsLayout(const Interface& interface,
       bool redraw = false;
       new_channels.erase(
           std::remove_if(new_channels.begin(), new_channels.end(),
-                         [](const IPCStruct::DiscordChannel& channel) {
+                         [](const IPCStruct::DiscordChannel &channel) {
                            return channel.type !=
                                   IPCStruct::DiscordChannelType::SERVER_VOICE;
                          }),
@@ -43,7 +43,7 @@ UIChannelsLayout::UIChannelsLayout(const Interface& interface,
 
       if (redraw) {
         _channels_menu->ClearItems();
-        for (const auto& channel : _channels) {
+        for (const auto &channel : _channels) {
           auto item = MenuItem::New(channel.name);
           item->AddOnClick([this, &channel]() {
             if (onDialogJoinVoice()) {

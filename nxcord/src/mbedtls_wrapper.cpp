@@ -4,13 +4,13 @@
 #include <common/logger.hpp>
 #include <nxcord/mbedtls_wrapper.hpp>
 
-std::string get_mbedtls_error(const char* name, int err) {
+std::string get_mbedtls_error(const char *, int err) {
   char buf[128];
   mbedtls_strerror(err, buf, sizeof(buf));
   return buf;
 }
 
-MBedTLSWrapper::MBedTLSWrapper(const std::string& hostname) {
+MBedTLSWrapper::MBedTLSWrapper(const std::string &hostname) {
   mbedtls_entropy_init(&_entropy);
   mbedtls_ctr_drbg_init(&_ctr_drbg);
   mbedtls_x509_crt_init(&_cacert);
@@ -62,7 +62,8 @@ MBedTLSWrapper::~MBedTLSWrapper() {
 
 void MBedTLSWrapper::setFd(int fd) {
   _net.fd = fd;
-  mbedtls_ssl_set_bio(&_ssl, &_net, mbedtls_net_send, mbedtls_net_recv, NULL);
+  mbedtls_ssl_set_bio(&_ssl, &_net, mbedtls_net_send, mbedtls_net_recv,
+                      nullptr);
 }
 
 bool MBedTLSWrapper::startSSL() {
@@ -74,10 +75,10 @@ bool MBedTLSWrapper::startSSL() {
   return true;
 }
 
-int MBedTLSWrapper::write(const unsigned char* data, size_t data_size) {
+int MBedTLSWrapper::write(const unsigned char *data, size_t data_size) {
   return mbedtls_ssl_write(&_ssl, data, data_size);
 }
 
-int MBedTLSWrapper::read(unsigned char* buf, size_t buf_size) {
+int MBedTLSWrapper::read(unsigned char *buf, size_t buf_size) {
   return mbedtls_ssl_read(&_ssl, buf, buf_size);
 }

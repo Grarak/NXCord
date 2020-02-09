@@ -11,17 +11,18 @@
 
 class NXCordAudioCapture {
  private:
-  AudioInBuffer _audin_buf;
+  AudioInBuffer _audin_buf{};
 
   std::mutex _queue_mutex;
   std::queue<AudioPacket> _queue;
 
-  LoopThread<NXCordAudioCapture*> _capture_thread;
+  LoopThread<NXCordAudioCapture *> _capture_thread;
 
-  friend void capture_thread(NXCordAudioCapture* audio_capture);
+  friend void capture_thread(NXCordAudioCapture *audio_capture);
 
  public:
   NXCordAudioCapture();
+
   ~NXCordAudioCapture();
 
   std::vector<SleepyDiscord::AudioSample> poll();

@@ -15,7 +15,7 @@ class UILogin2faLayout : public UICustomLayout {
   TextBlock::Ref _error_text;
 
  public:
-  UILogin2faLayout(const Interface& interface);
+  explicit UILogin2faLayout(const Interface &interface);
 
   PU_SMART_CTOR(UILogin2faLayout)
 };

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <sleepy_discord/asio_schedule.h>
 
 #include <map>
@@ -19,8 +20,9 @@ class DiscordScheduleHandler : public SleepyDiscord::GenericScheduleHandler {
 
  public:
   SleepyDiscord::Timer schedule(SleepyDiscord::TimedTask code,
-                                const time_t milliseconds) override;
+                                time_t milliseconds) override;
 
   void tick();
+
   void clear();
 };

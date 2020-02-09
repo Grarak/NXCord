@@ -1,14 +1,13 @@
 #include <malloc.h>
 
 #include <common/logger.hpp>
-#include <limits>
 #include <nxcord/nxcord_audio_player.hpp>
 #include <set>
 
-void player_thread(NXCordAudioPlayer* audio_player) {
+void player_thread(NXCordAudioPlayer *audio_player) {
   size_t frame_size = SleepyDiscord::AudioTransmissionDetails::proposedLength();
 
-  auto* buf = reinterpret_cast<SleepyDiscord::AudioSample*>(
+  auto *buf = reinterpret_cast<SleepyDiscord::AudioSample *>(
       audio_player->_audout_buf.buffer);
 
   time_t current_time = Utils::current_time_millis();
@@ -19,33 +18,32 @@ void player_thread(NXCordAudioPlayer* audio_player) {
 
     audio_player->_queue_mutex.lock();
 
-    for (auto it = audio_player->_queue.begin();
-         it != audio_player->_queue.end(); ++it) {
-      if (it->second.empty()) {
-        empty_ssrc.insert(it->first);
+    for (auto &audio_pair : audio_player->_queue) {
+      if (audio_pair.second.empty()) {
+        empty_ssrc.insert(audio_pair.first);
         continue;
       }
 
-      AudioPacket* packet = &it->second.front();
+      AudioPacket *packet = &audio_pair.second.front();
       while (current_time - packet->time >
              100) {  // Make sure packet is not older than 100ms
-        it->second.pop();
-        if (it->second.empty()) {
+        audio_pair.second.pop();
+        if (audio_pair.second.empty()) {
           packet = nullptr;
           break;
         }
-        packet = &it->second.front();
+        packet = &audio_pair.second.front();
       }
 
       if (!packet) {
-        empty_ssrc.insert(it->first);
+        empty_ssrc.insert(audio_pair.first);
         continue;
       }
 
       audio_sources.push_back(std::move(*packet));
-      it->second.pop();
-      if (it->second.empty()) {
-        empty_ssrc.insert(it->first);
+      audio_pair.second.pop();
+      if (audio_pair.second.empty()) {
+        empty_ssrc.insert(audio_pair.first);
       }
     }
 
@@ -56,7 +54,7 @@ void player_thread(NXCordAudioPlayer* audio_player) {
 
     for (size_t i = 0; i < frame_size; ++i) {
       int sample = 0;
-      for (const auto& packet : audio_sources) {
+      for (const auto &packet : audio_sources) {
         if (i < packet.data.size()) {
           sample += packet.data[i];
         }
@@ -71,7 +69,7 @@ void player_thread(NXCordAudioPlayer* audio_player) {
     }
   }
 
-  AudioOutBuffer* audout_released_buf = nullptr;
+  AudioOutBuffer *audout_released_buf = nullptr;
   audoutPlayBuffer(&audio_player->_audout_buf, &audout_released_buf);
 
   time_t time_passed = Utils::current_time_millis() - current_time;
@@ -86,7 +84,7 @@ NXCordAudioPlayer::NXCordAudioPlayer()
   Logger::write("NXCordAudioPlayer: audoutStartAudioOut() returned 0x%x\n", rc);
 
   size_t buffer_size = (Utils::opus_framesize_bytes + 0xfff) & ~0xfff;
-  void* out_buf_data = memalign(0x1000, buffer_size);
+  void *out_buf_data = memalign(0x1000, buffer_size);
   std::memset(out_buf_data, 0, buffer_size);
 
   _audout_buf.next = nullptr;
@@ -111,10 +109,10 @@ NXCordAudioPlayer::~NXCordAudioPlayer() {
 }
 
 void NXCordAudioPlayer::queue(
-    std::vector<SleepyDiscord::AudioSample>& audio,
-    const SleepyDiscord::AudioTransmissionDetails& details) {
+    std::vector<SleepyDiscord::AudioSample> &audio,
+    const SleepyDiscord::AudioTransmissionDetails &details) {
   std::scoped_lock lock(_queue_mutex);
-  std::queue<AudioPacket>& queue = _queue[details.ssrc()];
+  std::queue<AudioPacket> &queue = _queue[details.ssrc()];
   while (queue.size() > 5) {
     queue.pop();
   }

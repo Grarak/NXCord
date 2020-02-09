@@ -29,7 +29,7 @@ class LoopThread {
 
   A _arg;
   Executor _function;
-  Thread _loop_thread;
+  Thread _loop_thread{};
   std::atomic_bool _active;
   bool _parent_loop;
 
@@ -68,7 +68,7 @@ class LoopThread {
     }
   }
 
-  void stop(std::function<void()> stopper = []() {}) {
+  void stop(const std::function<void()> &stopper = []() {}) {
     if (_active.exchange(false)) {
       stopper();
       Result rc = threadWaitForExit(&_loop_thread);
@@ -76,5 +76,5 @@ class LoopThread {
     }
   }
 
-  inline bool isActive() const { return _active; }
+  [[nodiscard]] inline bool isActive() const { return _active; }
 };

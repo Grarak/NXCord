@@ -3,8 +3,11 @@
 #include <common/logger.hpp>
 #include <common/nxcord_com_interface.hpp>
 
-#include "ipc_client.hpp"
+#ifdef STANDALONE
 #include "standalone_client.hpp"
+#else
+#include "ipc_client.hpp"
+#endif
 #include "ui/ui_main.hpp"
 
 extern "C" {

@@ -12,7 +12,7 @@ class UILoggedIn : public UICustomLayout {
   time_t _connection_looked_up = 0;
 
  public:
-  UILoggedIn(const Interface &interface);
+  explicit UILoggedIn(const Interface &interface);
 
   PU_SMART_CTOR(UILoggedIn)
 };

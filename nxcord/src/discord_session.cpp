@@ -8,26 +8,26 @@
 #include <nxcord/zlib_wrapper.hpp>
 
 #define NEW_LINE "\r\n"
-constexpr const char* METHOD_NAMES[] = {"POST", "PATCH", "DELETE", "GET",
+constexpr const char *METHOD_NAMES[] = {"POST", "PATCH", "DELETE", "GET",
                                         "PUT"};
 
 SleepyDiscord::CustomInit SleepyDiscord::Session::init =
-    []() -> SleepyDiscord::GenericSession* { return new DiscordSession; };
+    []() -> SleepyDiscord::GenericSession * { return new DiscordSession; };
 
-void DiscordSession::setUrl(const std::string& url) { _url = url; }
+void DiscordSession::setUrl(const std::string &url) { _url = url; }
 
-void DiscordSession::setBody(const std::string* body) { _body = body; }
+void DiscordSession::setBody(const std::string *body) { _body = body; }
 
 void DiscordSession::setHeader(
-    const std::vector<SleepyDiscord::HeaderPair>& header) {
+    const std::vector<SleepyDiscord::HeaderPair> &header) {
   _headers = &header;
 }
 
-bool DiscordSession::contains_header(const std::string& key) const {
+bool DiscordSession::contains_header(const std::string &key) const {
   if (!_headers) {
     return false;
   }
-  for (const SleepyDiscord::HeaderPair& pair : *_headers) {
+  for (const SleepyDiscord::HeaderPair &pair : *_headers) {
     if (pair.name == key) {
       return true;
     }
@@ -37,7 +37,7 @@ bool DiscordSession::contains_header(const std::string& key) const {
 
 std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
     const SleepyDiscord::RequestMethod method,
-    SleepyDiscord::Response* response) {
+    SleepyDiscord::Response *response) {
   Logger::write("Requesting %s %s\n", _url.c_str(), METHOD_NAMES[method]);
 
   int ret;
@@ -45,7 +45,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   std::string protocol = _url.substr(0, _url.find("://"));
   size_t offset = protocol.length() + 3;
   if (offset < _url.length()) {  // makes sure that there is a hostname
-    hostname = _url.substr(offset, _url.find("/", offset) - offset);
+    hostname = _url.substr(offset, _url.find('/', offset) - offset);
 
     offset += hostname.length();
     if (_url[offset] == '/') {
@@ -53,7 +53,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
     }
   } else {
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
-    response->text = "{\"code\":0,\"message\":\"Invalid url\"\"}";
+    response->text = R"({"code":0,"message":"Invalid url""})";
     return nullptr;
   }
 
@@ -61,7 +61,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   if (!mbedtls_wrapper->usable()) {
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
     response->text =
-        "{\"code\":0,\"message\":\"" + mbedtls_wrapper->getError() + "\"\"}";
+        R"({"code":0,"message":")" + mbedtls_wrapper->getError() + "\"\"}";
     return mbedtls_wrapper;
   }
 
@@ -69,18 +69,18 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   int fd = -1;
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
-  addrinfo* res;
+  addrinfo *res;
 
   Logger::write("Connecting to %s\n", hostname.c_str());
   ret = getaddrinfo(hostname.c_str(), "443", &hints, &res);
   if (ret != 0) {
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
-    response->text = "{\"code\":0,\"message\":\"getaddrinfo: " +
+    response->text = R"({"code":0,"message":"getaddrinfo: )" +
                      std::string(gai_strerror(ret)) + "\"}";
     return mbedtls_wrapper;
   }
 
-  for (addrinfo* rp = res; rp; rp = rp->ai_next) {
+  for (addrinfo *rp = res; rp; rp = rp->ai_next) {
     fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
     if (fd == -1) {
       continue;
@@ -98,7 +98,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   if (fd == -1) {  // error check
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
     response->text =
-        "{\"code\":431,\"message\":\"Could not connect to the host\"}";
+        R"({"code":431,"message":"Could not connect to the host"})";
     return mbedtls_wrapper;
   }
 
@@ -109,7 +109,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   if (!mbedtls_wrapper->startSSL()) {
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
     response->text =
-        "{\"code\":431,\"message\":\"" + mbedtls_wrapper->getError() + "\"}";
+        R"({"code":431,"message":")" + mbedtls_wrapper->getError() + "\"}";
     return mbedtls_wrapper;
   }
 
@@ -128,7 +128,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   }
 
   if (_headers) {
-    for (const auto& pair : *_headers) {
+    for (const auto &pair : *_headers) {
       metadata.append(pair.name)
           .append(": ")
           .append(pair.value)
@@ -147,20 +147,20 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   Logger::write("Sending payload\n");
 
   ret = mbedtls_wrapper->write(
-      reinterpret_cast<const unsigned char*>(metadata.c_str()),
+      reinterpret_cast<const unsigned char *>(metadata.c_str()),
       metadata.size());
   if (ret < 0) {
     response->statusCode = SleepyDiscord::GENERAL_ERROR;
-    response->text = "{\"code\":431,\"message\":\"Write error " +
-                     std::to_string(ret) + "\"}";
+    response->text =
+        R"({"code":431,"message":"Write error )" + std::to_string(ret) + "\"}";
     return mbedtls_wrapper;
   }
   if (_body) {
     ret = mbedtls_wrapper->write(
-        reinterpret_cast<const unsigned char*>(_body->c_str()), _body->size());
+        reinterpret_cast<const unsigned char *>(_body->c_str()), _body->size());
     if (ret < 0) {
       response->statusCode = SleepyDiscord::GENERAL_ERROR;
-      response->text = "{\"code\":431,\"message\":\"Write error " +
+      response->text = R"({"code":431,"message":"Write error )" +
                        std::to_string(ret) + "\"}";
       return mbedtls_wrapper;
     }

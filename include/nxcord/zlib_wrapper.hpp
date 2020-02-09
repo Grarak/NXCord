@@ -6,10 +6,11 @@
 
 class ZlibWrapper {
  private:
-  z_stream _infstream;
+  z_stream _infstream{};
 
  public:
   ZlibWrapper();
+
   ~ZlibWrapper();
 
   std::string decompress(const char *buf, size_t length);

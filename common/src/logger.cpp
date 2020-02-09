@@ -1,13 +1,9 @@
-#include <dirent.h>
 #include <sys/stat.h>
-#include <time.h>
 
-#include <cerrno>
 #include <common/logger.hpp>
 #include <common/utils.hpp>
 #include <cstdarg>
 #include <cstdio>
-#include <cstring>
 #include <mutex>
 #include <string>
 
@@ -17,19 +13,19 @@ extern std::string_view log_name;
 
 std::mutex logger_mutex;
 
-void write(const char* fmt, ...) {
+void write(const char *fmt, ...) {
   std::scoped_lock lock(logger_mutex);
 
   bool dir_exists = Utils::create_directories(LOG_PATH "/");
-  FILE* fp = nullptr;
+  FILE *fp = nullptr;
   int log_size;
-  struct stat st;
+  struct stat st {};
   std::string full_path = LOG_PATH;
   full_path.append("/").append(log_name).append(".txt");
 
   if (dir_exists) {
-    time_t unixTime = time(NULL);
-    struct tm tStruct;
+    time_t unixTime = time(nullptr);
+    tm tStruct{};
     localtime_r(&unixTime, &tStruct);
 
     fp = fopen(full_path.c_str(), "a");

@@ -4,9 +4,9 @@
 #include <common/utils.hpp>
 #include <nxcord/nxcord_audio_capture.hpp>
 
-void capture_thread(NXCordAudioCapture* audio_capture) {
+void capture_thread(NXCordAudioCapture *audio_capture) {
   uint32_t released_in_count;
-  AudioInBuffer* audin_released_buf = nullptr;
+  AudioInBuffer *audin_released_buf = nullptr;
 
   time_t current_time = Utils::current_time_millis();
 
@@ -44,10 +44,10 @@ NXCordAudioCapture::NXCordAudioCapture()
   Logger::write("audinStartAudioIn() returned 0x%x\n", rc);
 
   u32 buffer_size = (Utils::opus_framesize_bytes + 0xfff) & ~0xfff;
-  void* in_buf_data = memalign(0x1000, buffer_size);
+  void *in_buf_data = memalign(0x1000, buffer_size);
   std::memset(in_buf_data, 0, buffer_size);
 
-  _audin_buf.next = NULL;
+  _audin_buf.next = nullptr;
   _audin_buf.buffer = in_buf_data;
   _audin_buf.buffer_size = buffer_size;
   _audin_buf.data_size = Utils::opus_framesize_bytes;
@@ -63,7 +63,7 @@ NXCordAudioCapture::~NXCordAudioCapture() {
   Logger::write("Releasing audio sender\n");
   _capture_thread.stop();
   uint32_t released_in_count;
-  AudioInBuffer* audin_released_buf = nullptr;
+  AudioInBuffer *audin_released_buf = nullptr;
   audinWaitCaptureFinish(&audin_released_buf, &released_in_count, U64_MAX);
 
   Result rc = audinStopAudioIn();
@@ -76,7 +76,7 @@ std::vector<SleepyDiscord::AudioSample> NXCordAudioCapture::poll() {
   std::vector<SleepyDiscord::AudioSample> capture;
 
   if (!_queue.empty()) {
-    AudioPacket* packet = &_queue.front();
+    AudioPacket *packet = &_queue.front();
     while (current_time - packet->time > 100) {
       _queue.pop();
       if (_queue.empty()) {

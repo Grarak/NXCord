@@ -6,20 +6,20 @@
 
 namespace Utils {
 
-const time_t current_time_millis() {
+time_t current_time_millis() {
   auto ms = std::chrono::time_point_cast<std::chrono::milliseconds>(
       std::chrono::steady_clock::now());
   return ms.time_since_epoch().count();
 }
 
-const bool create_directories(const char* file_path) {
-  DIR* log_dir = opendir(file_path);
+bool create_directories(const char *file_path) {
+  DIR *log_dir = opendir(file_path);
   if (log_dir) {
     closedir(log_dir);
     return true;
   }
 
-  for (const char* p = strchr(file_path + 1, '/'); p; p = strchr(p + 1, '/')) {
+  for (const char *p = strchr(file_path + 1, '/'); p; p = strchr(p + 1, '/')) {
     std::string path(file_path, p - file_path);
     if (mkdir(path.c_str(), 0755) == -1) {
       if (errno != EEXIST) {
@@ -31,7 +31,7 @@ const bool create_directories(const char* file_path) {
   return true;
 }
 
-const void copy_file(const std::string& srcPath, const std::string& destPath) {
+void copy_file(const std::string &srcPath, const std::string &destPath) {
   std::ifstream src(srcPath, std::ios::binary);
   std::ofstream dest(destPath, std::ios::binary);
 
@@ -42,11 +42,11 @@ const void copy_file(const std::string& srcPath, const std::string& destPath) {
   dest.close();
 }
 
-const bool file_exists(const std::string& path) {
+bool file_exists(const std::string &path) {
   return access(path.c_str(), F_OK) != -1;
 }
 
-const bool check_interval(time_t& previous_time, time_t interval) {
+bool check_interval(time_t &previous_time, time_t interval) {
   time_t current = current_time_millis();
   if (previous_time == 0 || current - previous_time >= interval) {
     previous_time = current;

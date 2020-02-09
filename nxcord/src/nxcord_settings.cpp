@@ -1,5 +1,3 @@
-#include <dirent.h>
-
 #include <common/utils.hpp>
 #include <nxcord/nxcord_settings.hpp>
 

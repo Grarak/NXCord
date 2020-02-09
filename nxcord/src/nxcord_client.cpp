@@ -9,8 +9,8 @@ class AudioReceiver : public SleepyDiscord::BaseAudioOutput {
   NXCordAudioPlayer _player;
 
  public:
-  void write(std::vector<SleepyDiscord::AudioSample>& audio,
-             SleepyDiscord::AudioTransmissionDetails& details) override {
+  void write(std::vector<SleepyDiscord::AudioSample> &audio,
+             SleepyDiscord::AudioTransmissionDetails &details) override {
     _player.queue(audio, details);
   }
 };
@@ -21,11 +21,11 @@ struct AudioSender : public SleepyDiscord::AudioVectorSource {
   std::vector<SleepyDiscord::AudioSample> _capture;
 
  public:
-  bool frameAvailable() {
-    _capture = std::move(_audio_capture.poll());
+  bool frameAvailable() override {
+    _capture = _audio_capture.poll();
     float average_volume = 0;
-    if (_capture.size() > 0) {
-      for (const auto& sample : _capture) {
+    if (!_capture.empty()) {
+      for (const auto &sample : _capture) {
         average_volume = static_cast<float>(std::abs(sample)) /
                          static_cast<float>(Utils::audio_sample_max);
       }
@@ -34,9 +34,9 @@ struct AudioSender : public SleepyDiscord::AudioVectorSource {
     return average_volume > 0.00001;  // Set user defined threshold here
   }
 
-  void read(SleepyDiscord::AudioTransmissionDetails& details,
-            SleepyDiscord::AudioVectorSource::Container& target) override {
-    if (_capture.size() > 0) {
+  void read(SleepyDiscord::AudioTransmissionDetails &details,
+            SleepyDiscord::AudioVectorSource::Container &target) override {
+    if (!_capture.empty()) {
       std::memcpy(target.data(), _capture.data(),
                   _capture.size() * sizeof(SleepyDiscord::AudioSample));
     }
@@ -45,34 +45,35 @@ struct AudioSender : public SleepyDiscord::AudioVectorSource {
 
 class VoiceEventHandler : public SleepyDiscord::BaseVoiceEventHandler {
  private:
-  NXCordClient* _client;
+  NXCordClient *_client;
 
  public:
-  VoiceEventHandler(NXCordClient* client) : _client(client) {}
+  explicit VoiceEventHandler(NXCordClient *client) : _client(client) {}
 
-  void onReady(SleepyDiscord::VoiceConnection& connection) override {
+  void onReady(SleepyDiscord::VoiceConnection &connection) override {
     Logger::write("NXCordClient: VoiceEventHandler: onReady\n");
 
     _client->_current_voice_connection = &connection;
-    _client->_current_voice_context = connection.getContext();
+    _client->_current_voice_context =
+        NXCordClient::LocalVoiceContext(connection.getContext());
 
-    SleepyDiscord::BaseAudioOutput* audio_receiver = new AudioReceiver();
+    SleepyDiscord::BaseAudioOutput *audio_receiver = new AudioReceiver();
     connection.setAudioOutput(audio_receiver);
     connection.startSpeaking<AudioSender>();
     connection.startListening();
   }
 
-  inline void onHeartbeat(SleepyDiscord::VoiceConnection&) override {
+  inline void onHeartbeat(SleepyDiscord::VoiceConnection &) override {
     Logger::write("Voice heartbeat sent\n");
   }
 
-  inline void onHeartbeatAck(SleepyDiscord::VoiceConnection&,
+  inline void onHeartbeatAck(SleepyDiscord::VoiceConnection &,
                              const time_t ping) override {
     Logger::write("Voice heartbeat acknowledged ping %lums\n", ping);
   }
 };
 
-void NXCordClient::onReady(SleepyDiscord::Ready readyData) {
+void NXCordClient::onReady(SleepyDiscord::Ready) {
   Logger::write("NXCordClient: onReady\n");
   _ready = true;
   _servers.clear();
@@ -80,7 +81,7 @@ void NXCordClient::onReady(SleepyDiscord::Ready readyData) {
   _current_voice_connection = nullptr;
 
   std::vector<SleepyDiscord::Server> servers = getServers().vector();
-  for (const auto& server : servers) {
+  for (const auto &server : servers) {
     addServer(server);
   }
 }
@@ -96,7 +97,7 @@ void NXCordClient::onResumed() {
     Logger::write("Rejoining voice channel %ld %ld\n",
                   _current_voice_context.serverID.number(),
                   _current_voice_context.channelID.number());
-    SleepyDiscord::VoiceContext& context = createVoiceContext(
+    SleepyDiscord::VoiceContext &context = createVoiceContext(
         _current_voice_context.serverID, _current_voice_context.channelID);
     context.sessionID = _current_voice_context.sessionID;
     context.endpoint = _current_voice_context.endpoint;
@@ -117,14 +118,14 @@ void NXCordClient::onEditServer(SleepyDiscord::Server editServer) {
                 editServer.ID.number());
 
   auto it = std::find_if(_servers.begin(), _servers.end(),
-                         [&editServer](const IPCStruct::DiscordServer& server) {
+                         [&editServer](const IPCStruct::DiscordServer &server) {
                            return editServer.ID.number() == server.id;
                          });
   if (it != _servers.end()) {
     IPCStruct::DiscordServer discord_server =
         NXCordComInterface::create_discord_server(editServer.name,
                                                   editServer.ID.number());
-    *it = std::move(discord_server);
+    *it = discord_server;
   }
 }
 
@@ -136,33 +137,33 @@ void NXCordClient::onDeleteServer(
   _servers.erase(
       std::remove_if(
           _servers.begin(), _servers.end(),
-          [&unavailableServer](const IPCStruct::DiscordServer& server) {
+          [&unavailableServer](const IPCStruct::DiscordServer &server) {
             return unavailableServer.ID.number() == server.id;
           }),
       _servers.end());
 }
 
-void NXCordClient::addServer(const SleepyDiscord::Server& serverToAdd) {
+void NXCordClient::addServer(const SleepyDiscord::Server &serverToAdd) {
   auto it =
       std::find_if(_servers.begin(), _servers.end(),
-                   [&serverToAdd](const IPCStruct::DiscordServer& server) {
+                   [&serverToAdd](const IPCStruct::DiscordServer &server) {
                      return serverToAdd.ID.number() == server.id;
                    });
   if (it != _servers.end()) {
     return;
   }
 
-  IPCStruct::DiscordServer discord_server;
+  IPCStruct::DiscordServer discord_server{};
   size_t name_size =
       std::min(sizeof(discord_server.name) - 1, serverToAdd.name.size());
   std::memcpy(discord_server.name, serverToAdd.name.c_str(), name_size);
   discord_server.name[name_size] = '\0';
   discord_server.id = serverToAdd.ID.number();
-  _servers.push_back(std::move(discord_server));
+  _servers.push_back(discord_server);
 }
 
 inline IPCStruct::DiscordChannel create_ipc_channel(
-    const SleepyDiscord::Channel& channel) {
+    const SleepyDiscord::Channel &channel) {
   return NXCordComInterface::create_discord_channel(
       channel.name, channel.serverID.number(), channel.ID.number(),
       static_cast<IPCStruct::DiscordChannelType>(channel.type));
@@ -188,7 +189,7 @@ void NXCordClient::onEditChannel(SleepyDiscord::Channel channel) {
   if (channels) {
     auto it = std::find_if(
         channels->begin(), channels->end(),
-        [&channel](const IPCStruct::DiscordChannel& cached_channel) {
+        [&channel](const IPCStruct::DiscordChannel &cached_channel) {
           return channel.ID.number() == cached_channel.id;
         });
 
@@ -210,7 +211,7 @@ void NXCordClient::onDeleteChannel(SleepyDiscord::Channel channel) {
     channels->erase(
         std::remove_if(
             channels->begin(), channels->end(),
-            [&channel](const IPCStruct::DiscordChannel& cached_channel) {
+            [&channel](const IPCStruct::DiscordChannel &cached_channel) {
               return channel.ID.number() == cached_channel.id;
             }),
         channels->end());
@@ -220,18 +221,18 @@ void NXCordClient::onDeleteChannel(SleepyDiscord::Channel channel) {
 }
 
 void NXCordClient::fillChannels(
-    const SleepyDiscord::Snowflake<SleepyDiscord::Server>& channel) {
-  std::vector<IPCStruct::DiscordChannel>& cached_channels =
+    const SleepyDiscord::Snowflake<SleepyDiscord::Server> &channel) {
+  std::vector<IPCStruct::DiscordChannel> &cached_channels =
       _channels[channel.number()];
   cached_channels.clear();
   std::vector<SleepyDiscord::Channel> channels =
       getServerChannels(channel).vector();
-  for (const auto& channel : channels) {
-    cached_channels.push_back(create_ipc_channel(channel));
+  for (const auto &current_channels : channels) {
+    cached_channels.push_back(create_ipc_channel(current_channels));
   }
 }
 
-const std::vector<IPCStruct::DiscordChannel>& NXCordClient::getCachedChannels(
+const std::vector<IPCStruct::DiscordChannel> &NXCordClient::getCachedChannels(
     int64_t serverId) {
   SleepyDiscord::Snowflake<SleepyDiscord::Server> serverSnowflake(serverId);
   auto channels = getChannelsPtr(serverSnowflake);
@@ -254,7 +255,7 @@ void NXCordClient::joinVoiceChannel(int64_t serverId, int64_t channelId) {
   SleepyDiscord::Snowflake<SleepyDiscord::Server> server(serverId);
   SleepyDiscord::Snowflake<SleepyDiscord::Channel> channel(channelId);
 
-  SleepyDiscord::VoiceContext& context = connectToVoiceChannel(server, channel);
+  SleepyDiscord::VoiceContext &context = connectToVoiceChannel(server, channel);
   context.startVoiceHandler<VoiceEventHandler>(this);
 }
 
@@ -270,7 +271,7 @@ void NXCordClient::disconnectVoiceChannel() {
   }
 }
 
-void NXCordClient::loadSettings(std::unique_ptr<NXCordSettings>& settings) {
+void NXCordClient::loadSettings(std::unique_ptr<NXCordSettings> &settings) {
   if (settings->valid()) {
     _settings = std::move(settings);
     _token = _settings->gettoken();

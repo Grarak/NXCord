@@ -1,4 +1,5 @@
 #pragma once
+
 #include <sleepy_discord/message_receiver.h>
 #include <sleepy_discord/websocket.h>
 #include <wslay/wslay.h>
@@ -22,16 +23,19 @@ class DiscordWebsocket : public SleepyDiscord::GenericWebsocketConnection {
   ZlibWrapper _zlib_wrapper;
 
   wslay_event_context_ptr _wslay_event_context = nullptr;
-  wslay_event_callbacks _wslay_event_callbacks;
+  wslay_event_callbacks _wslay_event_callbacks{};
 
-  bool pollSocket(int events);
+  bool pollSocket(uint16_t events);
 
   friend ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *buf,
                                size_t len, int flags, void *user_data);
+
   friend ssize_t send_callback(wslay_event_context_ptr ctx, const uint8_t *data,
                                size_t len, int flags, void *user_data);
+
   friend int genmask_callback(wslay_event_context_ptr ctx, uint8_t *buf,
                               size_t len, void *user_data);
+
   friend void on_msg_recv_callback(wslay_event_context_ptr ctx,
                                    const wslay_event_on_msg_recv_arg *arg,
                                    void *user_data);
@@ -40,9 +44,12 @@ class DiscordWebsocket : public SleepyDiscord::GenericWebsocketConnection {
   DiscordWebsocket(SleepyDiscord::GenericMessageReceiver *message_processor,
                    std::unique_ptr<MBedTLSWrapper> &mbedtls_wrapper,
                    bool zlib_compress = false);
+
   ~DiscordWebsocket() override;
 
   int queue_message(const std::string &message);
-  void disconnect(unsigned int, const std::string);
+
+  void disconnect(unsigned int, const std::string &);
+
   void tick();
 };

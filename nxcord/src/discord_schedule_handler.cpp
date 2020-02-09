@@ -19,7 +19,7 @@ SleepyDiscord::Timer DiscordScheduleHandler::schedule(
 
 void DiscordScheduleHandler::tick() {
   std::set<size_t> disabled_schedules;
-  for (auto& pair : _scheduled_functions) {
+  for (auto &pair : _scheduled_functions) {
     if (!pair.second.enabled) {
       disabled_schedules.insert(pair.first);
       continue;

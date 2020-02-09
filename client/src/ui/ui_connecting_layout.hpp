@@ -12,7 +12,7 @@ class UIConnectingLayout : public UICustomLayout {
   time_t _connection_looked_up = 0;
 
  public:
-  UIConnectingLayout(const Interface& interface);
+  explicit UIConnectingLayout(const Interface &interface);
 
   PU_SMART_CTOR(UIConnectingLayout)
 };

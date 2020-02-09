@@ -1,9 +1,11 @@
 #pragma once
+
 #include <sleepy_discord/sleepy_discord.h>
 
 #include <mutex>
 
 class DiscordScheduleHandler;
+
 class DiscordClient : public SleepyDiscord::BaseDiscordClient {
  private:
   static constexpr std::string_view loginURL =
@@ -16,12 +18,17 @@ class DiscordClient : public SleepyDiscord::BaseDiscordClient {
 
   bool connect(const std::string &, GenericMessageReceiver *,
                SleepyDiscord::WebsocketConnection &) override;
+
   void send(std::string, SleepyDiscord::WebsocketConnection &) override;
-  void disconnect(unsigned int, const std::string,
+
+  void disconnect(unsigned int, std::string,
                   SleepyDiscord::WebsocketConnection &) override;
-  void onError(SleepyDiscord::ErrorCode, const std::string) override;
+
+  void onError(SleepyDiscord::ErrorCode, std::string) override;
+
   SleepyDiscord::Timer schedule(SleepyDiscord::TimedTask code,
-                                const time_t milliseconds) override;
+                                time_t milliseconds) override;
+
   void stopClient() override;
 
   friend DiscordScheduleHandler;
@@ -31,7 +38,8 @@ class DiscordClient : public SleepyDiscord::BaseDiscordClient {
 
  public:
   DiscordClient();
-  virtual ~DiscordClient();
+
+  ~DiscordClient() override;
 
   bool setLoginCredentials(const std::string &email,
                            const std::string &password, bool *has2fa,

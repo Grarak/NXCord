@@ -1,15 +1,17 @@
+#include "ui_main.hpp"
+
 #include <common/logger.hpp>
+#include <utility>
 
 #include "ui_channels_layout.hpp"
 #include "ui_connecting_layout.hpp"
 #include "ui_logged_in.hpp"
 #include "ui_login_2fa_layout.hpp"
 #include "ui_login_layout.hpp"
-#include "ui_main.hpp"
 #include "ui_result.hpp"
 #include "ui_servers_layout.hpp"
 
-ResultListener::ResultListener(UIMain& uimain) : _ui_main(uimain) {}
+ResultListener::ResultListener(UIMain &uimain) : _ui_main(uimain) {}
 
 void ResultListener::onResultLogin() { _ui_main.showLogin(); }
 
@@ -29,7 +31,7 @@ void ResultListener::onResultConnected() {
 }
 
 void ResultListener::onResultServerClick(
-    const IPCStruct::DiscordServer& server) {
+    const IPCStruct::DiscordServer &server) {
   _ui_main.showChannels(server);
 }
 
@@ -45,9 +47,9 @@ bool ResultListener::onDialogJoinVoice() {
 }
 
 UIMain::UIMain(pu::ui::render::Renderer::Ref renderer,
-               const UICustomLayout::Interface& interface)
-    : Application(renderer),
-      _interface(interface),
+               UICustomLayout::Interface interface)
+    : Application(std::move(renderer)),
+      _interface(std::move(interface)),
       _listener(UIResultListener::New<ResultListener>(*this)) {}
 
 void UIMain::OnLoad() {
@@ -130,12 +132,12 @@ void UIMain::showServers() {
   loadCustomLayout<UIServersLayout>(UIState::Connected);
 }
 
-void UIMain::showChannels(const IPCStruct::DiscordServer& server) {
+void UIMain::showChannels(const IPCStruct::DiscordServer &server) {
   loadCustomLayout<UIChannelsLayout>(UIState::ShowChannels, server);
 }
 
 template <class Layout, class... Args>
-void UIMain::loadCustomLayout(UIState state, Args&&... args) {
+void UIMain::loadCustomLayout(UIState state, Args &&... args) {
   static_assert(std::is_base_of<UICustomLayout, Layout>::value,
                 "Layout must be child of UICustomLayout");
 

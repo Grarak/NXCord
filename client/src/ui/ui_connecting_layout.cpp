@@ -1,8 +1,8 @@
-#include <common/utils.hpp>
-
 #include "ui_connecting_layout.hpp"
 
-UIConnectingLayout::UIConnectingLayout(const Interface& interface)
+#include <common/utils.hpp>
+
+UIConnectingLayout::UIConnectingLayout(const Interface &interface)
     : UICustomLayout(interface) {
   _connecting_text =
       TextBlock::New(0, 0, "Establishing connection...Press X to stop");

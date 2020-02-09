@@ -4,7 +4,7 @@
 #include <nxcord/opus_decoder.hpp>
 
 SleepyDiscord::CustomInitOpusDecoder SleepyDiscord::CustomOpusDecoder::init =
-    []() -> SleepyDiscord::GenericOpusDecoder* { return new OpusDecoder; };
+    []() -> SleepyDiscord::GenericOpusDecoder * { return new OpusDecoder; };
 
 OpusDecoder::OpusDecoder(bool dummy) : _dummy(dummy) {
   if (!_dummy) {
@@ -25,8 +25,8 @@ OpusDecoder::~OpusDecoder() {
   }
 }
 
-int OpusDecoder::decodeOpus(uint8_t* encodedData, size_t encodedDataSize,
-                            int16_t* decodedData) {
+int OpusDecoder::decodeOpus(uint8_t *encodedData, size_t encodedDataSize,
+                            int16_t *decodedData) {
   int decoded_data_size;
   int decoded_sample_count;
   HwopusHeader header = {0};
@@ -34,7 +34,7 @@ int OpusDecoder::decodeOpus(uint8_t* encodedData, size_t encodedDataSize,
   std::memcpy(
       encodedData - sizeof(HwopusHeader), &header,
       sizeof(HwopusHeader));  // encodedData should have 12 bytes prepended RTP
-                              // header, HwopusHeader is 8 bytes
+  // header, HwopusHeader is 8 bytes
 
   Result res = hwopusDecodeInterleaved(
       &_hwdecoder, &decoded_data_size, &decoded_sample_count,

@@ -12,30 +12,42 @@ class NXCordService : public ams::sf::IServiceObject {
   IPC_COMMAND_ENUM
 
   template <typename I>
-  inline const I& getIn(const ams::sf::InBuffer& in_path) {
-    return *reinterpret_cast<const I*>(in_path.GetPointer());
+  inline const I &getIn(const ams::sf::InBuffer &in_path) {
+    return *reinterpret_cast<const I *>(in_path.GetPointer());
   }
 
   template <typename O>
-  inline void setOut(const ams::sf::OutBuffer& out_path, const O& out) {
+  inline void setOut(const ams::sf::OutBuffer &out_path, const O &out) {
     std::memcpy(out_path.GetPointer(), &out, sizeof(out));
   }
 
-  ams::Result IsConnected(const ams::sf::OutBuffer& out_path);
-  ams::Result IsConnecting(const ams::sf::OutBuffer& out_path);
-  ams::Result AttemptLogin(const ams::sf::InBuffer& in_path,
-                           const ams::sf::OutBuffer& out_path);
-  ams::Result Submit2faCode(const ams::sf::InBuffer& in_path,
-                            const ams::sf::OutBuffer& out_path);
-  ams::Result TokenAvailable(const ams::sf::OutBuffer& out_path);
+  ams::Result IsConnected(const ams::sf::OutBuffer &out_path);
+
+  ams::Result IsConnecting(const ams::sf::OutBuffer &out_path);
+
+  ams::Result AttemptLogin(const ams::sf::InBuffer &in_path,
+                           const ams::sf::OutBuffer &out_path);
+
+  ams::Result Submit2faCode(const ams::sf::InBuffer &in_path,
+                            const ams::sf::OutBuffer &out_path);
+
+  ams::Result TokenAvailable(const ams::sf::OutBuffer &out_path);
+
   ams::Result StartConnection();
+
   ams::Result StopConnection();
-  ams::Result GetServers(const ams::sf::OutBuffer& out_path);
-  ams::Result GetChannels(const ams::sf::InBuffer& in_path,
-                          const ams::sf::OutBuffer& out_path);
-  ams::Result JoinVoiceChannel(const ams::sf::InBuffer& in_path);
+
+  ams::Result GetServers(const ams::sf::OutBuffer &out_path);
+
+  ams::Result GetChannels(const ams::sf::InBuffer &in_path,
+                          const ams::sf::OutBuffer &out_path);
+
+  ams::Result JoinVoiceChannel(const ams::sf::InBuffer &in_path);
+
   ams::Result DisconnectVoiceChannel();
-  ams::Result IsConnectedVoiceChannel(const ams::sf::OutBuffer& out_path);
+
+  ams::Result IsConnectedVoiceChannel(const ams::sf::OutBuffer &out_path);
+
   ams::Result Logout();
 
  public:
@@ -58,10 +70,10 @@ class NXCordService : public ams::sf::IServiceObject {
 
 class IPCServer {
  public:
-  using Executor = std::function<void(NXCordClient& client)>;
+  using Executor = std::function<void(NXCordClient &client)>;
 
  private:
-  static IPCServer* instance;
+  static IPCServer *instance;
 
   struct ServerOptions {
     static const size_t PointerBufferSize = 0x1000;
@@ -77,16 +89,19 @@ class IPCServer {
   ams::sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions>
       _server_manager;
 
-  NXCordClient& _client;
-  std::mutex& _client_mutex;
-  void executeFunction(Executor executor);
+  NXCordClient &_client;
+  std::mutex &_client_mutex;
 
-  LoopThread<IPCServer*> _ipc_session_thread;
+  void executeFunction(const Executor &executor);
 
-  friend void ipc_session_thread(IPCServer* ipc_session);
+  LoopThread<IPCServer *> _ipc_session_thread;
+
+  friend void ipc_session_thread(IPCServer *ipc_session);
+
   friend NXCordService;
 
  public:
-  IPCServer(NXCordClient& client, std::mutex& client_mutex);
+  IPCServer(NXCordClient &client, std::mutex &client_mutex);
+
   ~IPCServer();
 };

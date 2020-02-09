@@ -14,7 +14,7 @@ class UIServersLayout : public UICustomLayout {
   time_t _server_lookup_time = 0;
 
  public:
-  UIServersLayout(const Interface& interface);
+  explicit UIServersLayout(const Interface &interface);
 
   PU_SMART_CTOR(UIServersLayout)
 };

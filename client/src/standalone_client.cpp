@@ -1,11 +1,12 @@
 #ifdef STANDALONE
+
+#include "standalone_client.hpp"
+
 #include <switch.h>
 
 #include <common/logger.hpp>
 #include <common/utils.hpp>
 #include <nxcord/nxcord_settings.hpp>
-
-#include "standalone_client.hpp"
 
 void standalone_client_thread(StandaloneClient *client) {
   {
@@ -47,7 +48,7 @@ IPCStruct::LoginResult StandaloneClient::attemptLogin(
   bool success = _nxcord_client.setLoginCredentials(login.email, login.password,
                                                     &has2fa, &error);
 
-  IPCStruct::LoginResult ret;
+  IPCStruct::LoginResult ret{};
   ret.success = success;
   ret.has2fa = has2fa;
   std::strncpy(ret.error_message, error.c_str(), sizeof(ret.error_message) - 1);

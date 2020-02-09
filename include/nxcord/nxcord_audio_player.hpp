@@ -14,18 +14,19 @@
 
 class NXCordAudioPlayer {
  private:
-  AudioOutBuffer _audout_buf;
+  AudioOutBuffer _audout_buf{};
   std::map<uint32_t, std::queue<AudioPacket>> _queue;
   std::mutex _queue_mutex;
 
-  LoopThread<NXCordAudioPlayer*> _player_thread;
+  LoopThread<NXCordAudioPlayer *> _player_thread;
 
-  friend void player_thread(NXCordAudioPlayer* audio_player);
+  friend void player_thread(NXCordAudioPlayer *audio_player);
 
  public:
   NXCordAudioPlayer();
+
   ~NXCordAudioPlayer();
 
-  void queue(std::vector<SleepyDiscord::AudioSample>& audio,
-             const SleepyDiscord::AudioTransmissionDetails& details);
+  void queue(std::vector<SleepyDiscord::AudioSample> &audio,
+             const SleepyDiscord::AudioTransmissionDetails &details);
 };

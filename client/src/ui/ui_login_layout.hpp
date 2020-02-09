@@ -19,7 +19,7 @@ class UILoginLayout : public UICustomLayout {
   time_t _token_looked_up = 0;
 
  public:
-  UILoginLayout(const Interface &interface);
+  explicit UILoginLayout(const Interface &interface);
 
   PU_SMART_CTOR(UILoginLayout)
 };

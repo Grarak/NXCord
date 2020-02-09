@@ -2,6 +2,7 @@
 
 #include <common/nxcord_com_interface.hpp>
 #include <pu/Plutonium>
+#include <utility>
 
 #include "ui_result.hpp"
 
@@ -13,7 +14,8 @@ class UICustomLayout : public pu::ui::Layout, public UIResultContainer {
   Interface _interface;
 
  public:
-  UICustomLayout(const Interface &interface) : _interface(interface) {}
+  explicit UICustomLayout(Interface interface)
+      : _interface(std::move(interface)) {}
 
   PU_SMART_CTOR(UICustomLayout)
 };
