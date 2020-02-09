@@ -1,12 +1,15 @@
-[submodule "external/sleepy-discord"]
-	path = external/sleepy-discord
+[submodule "externals/sleepy-discord"]
+	path = externals/sleepy-discord
 	url = git@github.com:Grarak/sleepy-discord.git
-[submodule "external/Atmosphere-libs"]
-	path = external/Atmosphere-libs
+[submodule "externals/Atmosphere-libs/Atmosphere-libs"]
+	path = externals/Atmosphere-libs/Atmosphere-libs
 	url = git@github.com:Atmosphere-NX/Atmosphere-libs.git
-[submodule "external/Plutonium"]
-	path = external/Plutonium
+[submodule "externals/Plutonium/Plutonium"]
+	path = externals/Plutonium/Plutonium
 	url = git@github.com:XorTroll/Plutonium.git
-[submodule "external/SimpleIniParser"]
-	path = external/SimpleIniParser
+[submodule "externals/SimpleIniParser/SimpleIniParser"]
+	path = externals/SimpleIniParser/SimpleIniParser
 	url = git@github.com:AtlasNX/SimpleIniParser.git
+[submodule "externals/wslay/wslay"]
+	path = externals/wslay/wslay
+	url = git@github.com:tatsuhiro-t/wslay.git

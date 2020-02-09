@@ -27,18 +27,20 @@ Also right now a lot of features are missing. Head over to [projects](https://gi
 ### Microphone
 The switch itself doesn't have any external microphones, so you do need to plug in headphones/earbuds to actually utilise speaking.
 
-## Dependencies
+## Building NXCord
+
+### Dependencies
 For building you need to install dependencies first.
 
 Assuming you have devkitpro and libnx installed, just run:
 ```
-$ (dkp-)pacman -S devkitpro-pkgbuild-helpers switch-pkg-config switch-libsodium switch-mbedtls switch-zlib switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-sdl2_gfx switch-sdl2_mixer switch-mesa switch-glad switch-glm switch-libdrm_nouveau switch-libwebp switch-libpng switch-freetype switch-bzip2 switch-libjpeg-turbo switch-opusfile switch-libopus
+$ (dkp-)pacman -S switch-libsodium switch-mbedtls switch-zlib switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-sdl2_gfx switch-sdl2_mixer switch-mesa switch-glad switch-glm switch-libdrm_nouveau switch-libwebp switch-libpng switch-freetype switch-bzip2 switch-libjpeg-turbo switch-opusfile switch-libopus
 ```
-
-## Building NXCord
 ```
 $ git clone --recurse-submodules git@github.com:Grarak/NXCord.git
 $ cd NXCord
+$ mkdir build
+$ cmake -DCMAKE_TOOLCHAIN_FILE=../DevkitA64Libnx.cmake ..
 $ make
 ```
 
@@ -46,13 +48,11 @@ $ make
 There are several different build variants:
 - Client without IPC:
 ```
-$ cd client
-$ make standalone
+$ cmake -DCMAKE_TOOLCHAIN_FILE=../DevkitA64Libnx.cmake -DENABLE_CLIENT_STANDALONE=ON ..
 ```
-- Sysmodule as client:
+- Sysmodule without IPC:
 ```
-$ cd sysmodule
-$ make application
+$ cmake -DCMAKE_TOOLCHAIN_FILE=../DevkitA64Libnx.cmake -DENABLE_SYSMODULE_APPLICATION=ON ..
 ```
 
 ## License

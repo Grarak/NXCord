@@ -9,3 +9,6 @@ build
 .token
 /wslay*
 /release.zip
+/.idea
+/cmake-build-*
+/build
