@@ -31,7 +31,8 @@ void receive_thread(DiscordUDPClient *udp_client) {
       if (handler) {
         handler(ret);
       }
-    } else if (errno != EAGAIN && errno != EWOULDBLOCK) {
+    } else if (errno != EAGAIN && errno != EWOULDBLOCK &&
+               udp_client->_receive_thread.isActive()) {
       svcSleepThread(1e+9);
     }
   }
