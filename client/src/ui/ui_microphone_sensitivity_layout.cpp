@@ -38,25 +38,39 @@ UIMicrophoneSensitivityLayout::UIMicrophoneSensitivityLayout(
   auto decrease_btn = Button::New(sensitivity_x - 120, sensitivity_y, 100, 80,
                                   "<", pu::ui::Color(0xff, 0xff, 0xff, 0xff),
                                   pu::ui::Color(0x00, 0x00, 0xff, 0xff));
-  decrease_btn->SetOnClick([this, sensitivity_x, threshold, threshold_steps,
-                            threshold_step]() {
+  auto increase_btn =
+      Button::New(sensitivity_x + sensitivity_width + 20, sensitivity_y, 100,
+                  80, ">", pu::ui::Color(0xff, 0xff, 0xff, 0xff),
+                  pu::ui::Color(0x00, 0x00, 0xff, 0xff));
+
+  auto decrease_fun = [this, sensitivity_x, threshold, threshold_steps,
+                       threshold_step]() {
     if (_current_threshold > 0) {
       threshold->SetX(sensitivity_x + --_current_threshold * threshold_step);
       _interface->setMicrophoneThreshold(
           static_cast<float>(_current_threshold) / threshold_steps);
     }
-  });
+  };
 
-  auto increase_btn =
-      Button::New(sensitivity_x + sensitivity_width + 20, sensitivity_y, 100,
-                  80, ">", pu::ui::Color(0xff, 0xff, 0xff, 0xff),
-                  pu::ui::Color(0x00, 0x00, 0xff, 0xff));
-  increase_btn->SetOnClick([this, sensitivity_x, threshold, threshold_steps,
-                            threshold_step]() {
+  auto increase_fun = [this, sensitivity_x, threshold, threshold_steps,
+                       threshold_step]() {
     if (_current_threshold < threshold_steps) {
       threshold->SetX(sensitivity_x + ++_current_threshold * threshold_step);
       _interface->setMicrophoneThreshold(
           static_cast<float>(_current_threshold) / threshold_steps);
+    }
+  };
+
+  decrease_btn->SetOnClick(decrease_fun);
+  increase_btn->SetOnClick(increase_fun);
+
+  SetOnInput([decrease_fun, increase_fun](u64 Down, u64 Up, u64 Held,
+                                          pu::ui::Touch Pos) {
+    if (Down & KEY_DLEFT || Down & KEY_LSTICK_LEFT || Down & KEY_RSTICK_LEFT) {
+      decrease_fun();
+    } else if (Down & KEY_DRIGHT || Down & KEY_LSTICK_RIGHT ||
+               Down & KEY_RSTICK_RIGHT) {
+      increase_fun();
     }
   });
 

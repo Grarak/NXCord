@@ -44,20 +44,34 @@ void UIRangeSelectorLayout::init() {
                                   pu::ui::Color(0xff, 0xff, 0xff, 0xff),
                                   pu::ui::Color(0, 0, 0xff, 0xff));
 
-  decrease_btn->SetOnClick([this, selected_text]() {
+  auto decrease_fun = [this, selected_text]() {
     if (_selected > 0) {
       selected_text->SetText(_items[--_selected]);
       if (_selected_listener) {
         _selected_listener(_items[_selected], _selected);
       }
     }
-  });
-  increase_btn->SetOnClick([this, selected_text]() {
+  };
+
+  auto increase_fun = [this, selected_text]() {
     if (_selected + 1 < _items.size()) {
       selected_text->SetText(_items[++_selected]);
       if (_selected_listener) {
         _selected_listener(_items[_selected], _selected);
       }
+    }
+  };
+
+  decrease_btn->SetOnClick(decrease_fun);
+  increase_btn->SetOnClick(increase_fun);
+
+  SetOnInput([decrease_fun, increase_fun](u64 Down, u64 Up, u64 Held,
+                                          pu::ui::Touch Pos) {
+    if (Down & KEY_DLEFT || Down & KEY_LSTICK_LEFT || Down & KEY_RSTICK_LEFT) {
+      decrease_fun();
+    } else if (Down & KEY_DRIGHT || Down & KEY_LSTICK_RIGHT ||
+               Down & KEY_RSTICK_RIGHT) {
+      increase_fun();
     }
   });
 
