@@ -1,37 +1,59 @@
 #include <common/logger.hpp>
 #include <common/utils.hpp>
+#include <nxcord/discord_websocket.hpp>
 #include <nxcord/nxcord_audio_capture.hpp>
 #include <nxcord/nxcord_audio_player.hpp>
 #include <nxcord/nxcord_client.hpp>
 
 class AudioReceiver : public SleepyDiscord::BaseAudioOutput {
  private:
+  NXCordClient &_client;
   NXCordAudioPlayer _player;
 
  public:
+  explicit AudioReceiver(NXCordClient &client) : _client(client) {}
+
   void write(std::vector<SleepyDiscord::AudioSample> &audio,
              SleepyDiscord::AudioTransmissionDetails &details) override {
+    std::string global_audio_volume_str =
+        _client.getSettings().getvoiceglobal_audio_volume();
+    float global_audio_volume = std::stof(global_audio_volume_str);
+    for (auto &sample : audio) {
+      sample *= global_audio_volume;
+    }
     _player.queue(audio, details);
   }
 };
 
-struct AudioSender : public SleepyDiscord::AudioVectorSource {
+class AudioSender : public SleepyDiscord::AudioVectorSource {
  private:
+  NXCordClient &_client;
   NXCordAudioCapture _audio_capture;
   std::vector<SleepyDiscord::AudioSample> _capture;
 
  public:
+  explicit AudioSender(NXCordClient &client) : _client(client) {}
+
+  ~AudioSender() override { _client._previous_mic_volume = 0; }
+
   bool frameAvailable() override {
     _capture = _audio_capture.poll();
     float average_volume = 0;
+    std::string multiplier_str = _client.getSettings().getvoicemic_multiplier();
+    size_t multiplier = std::stof(multiplier_str);
     if (!_capture.empty()) {
-      for (const auto &sample : _capture) {
-        average_volume = static_cast<float>(std::abs(sample)) /
-                         static_cast<float>(Utils::audio_sample_max);
+      for (auto &sample : _capture) {
+        sample *= multiplier;
+        average_volume += static_cast<float>(std::abs(sample)) /
+                          static_cast<float>(Utils::audio_sample_max);
       }
       average_volume /= static_cast<float>(_capture.size());
     }
-    return average_volume > 0.00001;  // Set user defined threshold here
+    _client._previous_mic_volume = average_volume;
+
+    std::string threshold_str = _client.getSettings().getvoicemic_threshold();
+    float threshold = std::stof(threshold_str);
+    return average_volume > std::max(threshold, 0.00001f);
   }
 
   void read(SleepyDiscord::AudioTransmissionDetails &details,
@@ -45,21 +67,21 @@ struct AudioSender : public SleepyDiscord::AudioVectorSource {
 
 class VoiceEventHandler : public SleepyDiscord::BaseVoiceEventHandler {
  private:
-  NXCordClient *_client;
+  NXCordClient &_client;
 
  public:
-  explicit VoiceEventHandler(NXCordClient *client) : _client(client) {}
+  explicit VoiceEventHandler(NXCordClient &client) : _client(client) {}
 
   void onReady(SleepyDiscord::VoiceConnection &connection) override {
     Logger::write("NXCordClient: VoiceEventHandler: onReady\n");
 
-    _client->_current_voice_connection = &connection;
-    _client->_current_voice_context =
+    _client._current_voice_connection = &connection;
+    _client._current_voice_context =
         NXCordClient::LocalVoiceContext(connection.getContext());
 
-    SleepyDiscord::BaseAudioOutput *audio_receiver = new AudioReceiver();
+    SleepyDiscord::BaseAudioOutput *audio_receiver = new AudioReceiver(_client);
     connection.setAudioOutput(audio_receiver);
-    connection.startSpeaking<AudioSender>();
+    connection.startSpeaking<AudioSender>(_client);
     connection.startListening();
   }
 
@@ -77,6 +99,7 @@ void NXCordClient::onReady(SleepyDiscord::Ready) {
   Logger::write("NXCordClient: onReady\n");
   _ready = true;
   _servers.clear();
+  _servers.shrink_to_fit();
   _channels.clear();
   _current_voice_connection = nullptr;
 
@@ -102,7 +125,7 @@ void NXCordClient::onResumed() {
     context.sessionID = _current_voice_context.sessionID;
     context.endpoint = _current_voice_context.endpoint;
     context.token = _current_voice_context.token;
-    context.startVoiceHandler<VoiceEventHandler>(this);
+    context.startVoiceHandler<VoiceEventHandler>(*this);
     connectToVoiceChannel(context);
   }
 }
@@ -256,7 +279,7 @@ void NXCordClient::joinVoiceChannel(int64_t serverId, int64_t channelId) {
   SleepyDiscord::Snowflake<SleepyDiscord::Channel> channel(channelId);
 
   SleepyDiscord::VoiceContext &context = connectToVoiceChannel(server, channel);
-  context.startVoiceHandler<VoiceEventHandler>(this);
+  context.startVoiceHandler<VoiceEventHandler>(*this);
 }
 
 bool NXCordClient::isConnectedVoiceChannel() {

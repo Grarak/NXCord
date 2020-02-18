@@ -3,8 +3,8 @@
 UILoggedIn::UILoggedIn(const Interface &interface) : UICustomLayout(interface) {
   auto text = TextBlock::New(
       0, 0, "You are logged in! Press A to connect or X to logout");
-  text->SetX(1280 / 2 - text->GetTextWidth() / 2);
-  text->SetY(720 / 2 - text->GetTextHeight() / 2);
+  text->SetX(SCREEN_WIDTH / 2 - text->GetTextWidth() / 2);
+  text->SetY(SCREEN_HEIGHT / 2 - text->GetTextHeight() / 2);
 
   SetOnInput([this](u64 Down, u64 Up, u64 Held, pu::ui::Touch Pos) {
     if (Down & KEY_A) {

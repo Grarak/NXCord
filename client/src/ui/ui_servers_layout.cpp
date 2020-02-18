@@ -2,8 +2,8 @@
 
 UIServersLayout::UIServersLayout(const Interface &interface)
     : UICustomLayout(interface) {
-  _server_menu =
-      Menu::New(0, 0, 1280, pu::ui::Color(0xff, 0xff, 0xff, 0xff), 100, 8);
+  _server_menu = Menu::New(0, 0, SCREEN_WIDTH,
+                           pu::ui::Color(0xff, 0xff, 0xff, 0xff), 100, 8);
   _server_menu->SetOnFocusColor(pu::ui::Color(0, 0, 0, 0x80));
 
   AddThread([this]() {

@@ -63,14 +63,15 @@ void on_msg_recv_callback(wslay_event_context_ptr,
   std::string str_msg;
 
   if (discord_websocket->_zlib_compress) {
-    std::vector<char> &_zlib_buf = discord_websocket->_zlib_buf;
-    _zlib_buf.insert(_zlib_buf.end(), msg, msg + arg->msg_length);
+    std::vector<char> &zlib_buf = discord_websocket->_zlib_buf;
+    zlib_buf.insert(zlib_buf.end(), msg, msg + arg->msg_length);
     if (arg->msg_length >= 4 &&
         std::memcmp(msg + arg->msg_length - 4, DiscordWebsocket::zlib_suffix,
                     4) == 0) {
-      str_msg = discord_websocket->_zlib_wrapper.decompress(_zlib_buf.data(),
-                                                            _zlib_buf.size());
-      _zlib_buf.clear();
+      str_msg = discord_websocket->_zlib_wrapper.decompress(zlib_buf.data(),
+                                                            zlib_buf.size());
+      zlib_buf.clear();
+      zlib_buf.shrink_to_fit();
     }
   } else {
     str_msg = std::string(msg, msg + arg->msg_length);
@@ -82,8 +83,10 @@ void on_msg_recv_callback(wslay_event_context_ptr,
                                                static_cast<size_t>(
                                                    500)));  // Limit log output
     Logger::write("Receive %s\n", log.c_str());
-    discord_websocket->_message_processor->processMessage(str_msg);
-    Logger::write("Message processed\n");
+    if (str_msg[0] == '{' || str_msg[0] == '[') {
+      discord_websocket->_message_processor->processMessage(str_msg);
+      Logger::write("Message processed\n");
+    }
   }
 }
 

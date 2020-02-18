@@ -20,6 +20,13 @@
     DisconnectVoiceChannel = 10,  \
     IsConnectedVoiceChannel = 11, \
     Logout = 12,                  \
+    SetMicrophoneAmplifier = 13,  \
+    GetMicrophoneAmplifier = 14,  \
+    SetGlobalAudioVolume = 15,    \
+    GetGlobalAudioVolume = 16,    \
+    GetMicrophoneVolume = 17,     \
+    SetMicrophoneThreshold = 18,  \
+    GetMicrophoneThreshold = 19,  \
   };
 
 namespace IPCStruct {

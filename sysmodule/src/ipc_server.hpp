@@ -12,43 +12,44 @@ class NXCordService : public ams::sf::IServiceObject {
   IPC_COMMAND_ENUM
 
   template <typename I>
-  inline const I &getIn(const ams::sf::InBuffer &in_path) {
+  static inline const I &getIn(const ams::sf::InBuffer &in_path) {
     return *reinterpret_cast<const I *>(in_path.GetPointer());
   }
 
   template <typename O>
-  inline void setOut(const ams::sf::OutBuffer &out_path, const O &out) {
+  static inline void setOut(const ams::sf::OutBuffer &out_path, const O &out) {
     std::memcpy(out_path.GetPointer(), &out, sizeof(out));
   }
 
   ams::Result IsConnected(const ams::sf::OutBuffer &out_path);
-
   ams::Result IsConnecting(const ams::sf::OutBuffer &out_path);
 
   ams::Result AttemptLogin(const ams::sf::InBuffer &in_path,
                            const ams::sf::OutBuffer &out_path);
-
   ams::Result Submit2faCode(const ams::sf::InBuffer &in_path,
                             const ams::sf::OutBuffer &out_path);
-
   ams::Result TokenAvailable(const ams::sf::OutBuffer &out_path);
 
   ams::Result StartConnection();
-
   ams::Result StopConnection();
 
   ams::Result GetServers(const ams::sf::OutBuffer &out_path);
-
   ams::Result GetChannels(const ams::sf::InBuffer &in_path,
                           const ams::sf::OutBuffer &out_path);
 
   ams::Result JoinVoiceChannel(const ams::sf::InBuffer &in_path);
-
   ams::Result DisconnectVoiceChannel();
-
   ams::Result IsConnectedVoiceChannel(const ams::sf::OutBuffer &out_path);
 
   ams::Result Logout();
+
+  ams::Result SetMicrophoneAmplifier(const ams::sf::InBuffer &in_path);
+  ams::Result GetMicrophoneAmplifier(const ams::sf::OutBuffer &out_path);
+  ams::Result SetGlobalAudioVolume(const ams::sf::InBuffer &in_path);
+  ams::Result GetGlobalAudioVolume(const ams::sf::OutBuffer &out_path);
+  ams::Result GetMicrophoneVolume(const ams::sf::OutBuffer &out_path);
+  ams::Result SetMicrophoneThreshold(const ams::sf::InBuffer &in_path);
+  ams::Result GetMicrophoneThreshold(const ams::sf::OutBuffer &out_path);
 
  public:
   DEFINE_SERVICE_DISPATCH_TABLE{
@@ -65,6 +66,13 @@ class NXCordService : public ams::sf::IServiceObject {
       MAKE_SERVICE_COMMAND_META(DisconnectVoiceChannel),
       MAKE_SERVICE_COMMAND_META(IsConnectedVoiceChannel),
       MAKE_SERVICE_COMMAND_META(Logout),
+      MAKE_SERVICE_COMMAND_META(SetMicrophoneAmplifier),
+      MAKE_SERVICE_COMMAND_META(GetMicrophoneAmplifier),
+      MAKE_SERVICE_COMMAND_META(SetGlobalAudioVolume),
+      MAKE_SERVICE_COMMAND_META(GetGlobalAudioVolume),
+      MAKE_SERVICE_COMMAND_META(GetMicrophoneVolume),
+      MAKE_SERVICE_COMMAND_META(SetMicrophoneThreshold),
+      MAKE_SERVICE_COMMAND_META(GetMicrophoneThreshold),
   };
 };
 

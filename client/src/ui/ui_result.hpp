@@ -2,6 +2,10 @@
 
 #include <memory>
 
+#include "ui_custom_layout.hpp"
+
+class UICustomLayout;
+
 class UIResultListener {
  protected:
   UIResultListener() = default;
@@ -29,10 +33,13 @@ class UIResultListener {
   virtual void onResultNoChannels() = 0;
 
   virtual bool onDialogJoinVoice() = 0;
+
+  virtual void onShowLayout(const std::shared_ptr<UICustomLayout> &current,
+                            const std::shared_ptr<UICustomLayout> &layout) = 0;
 };
 
 class UIResultContainer {
- private:
+ protected:
   std::shared_ptr<UIResultListener> _listener;
 
  public:

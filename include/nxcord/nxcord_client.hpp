@@ -10,7 +10,7 @@
 #include "nxcord_settings.hpp"
 
 class AudioReceiver;
-
+class AudioSender;
 class VoiceEventHandler;
 
 class NXCordClient : public DiscordClient {
@@ -34,8 +34,11 @@ class NXCordClient : public DiscordClient {
 
   bool _ready = false;
   std::unique_ptr<NXCordSettings> _settings;
+
   LocalVoiceContext _current_voice_context;
   SleepyDiscord::VoiceConnection *_current_voice_connection = nullptr;
+  float _previous_mic_volume = 0;
+
   std::vector<IPCStruct::DiscordServer> _servers;
   std::map<int64_t, std::vector<IPCStruct::DiscordChannel>> _channels;
 
@@ -84,6 +87,7 @@ class NXCordClient : public DiscordClient {
   }
 
   friend AudioReceiver;
+  friend AudioSender;
   friend VoiceEventHandler;
 
  public:
@@ -115,4 +119,8 @@ class NXCordClient : public DiscordClient {
   bool isConnectedVoiceChannel();
 
   void disconnectVoiceChannel();
+
+  inline NXCordSettings &getSettings() { return *_settings; }
+
+  inline float getMicrophoneVolume() { return _previous_mic_volume; }
 };

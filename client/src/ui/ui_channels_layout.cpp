@@ -5,8 +5,9 @@ UIChannelsLayout::UIChannelsLayout(const Interface &interface,
     : UICustomLayout(interface) {
   auto server_name_text =
       TextBlock::New(0, 0, server.name + std::string(" - Voice channels"));
-  server_name_text->SetX(1280 / 2 - server_name_text->GetTextWidth() / 2);
-  _channels_menu = Menu::New(0, server_name_text->GetTextHeight(), 1280,
+  server_name_text->SetX(SCREEN_WIDTH / 2 -
+                         server_name_text->GetTextWidth() / 2);
+  _channels_menu = Menu::New(0, server_name_text->GetTextHeight(), SCREEN_WIDTH,
                              pu::ui::Color(0xff, 0xff, 0xff, 0xff), 50, 14);
   _channels_menu->SetOnFocusColor(pu::ui::Color(0, 0, 0, 0x80));
 
@@ -23,7 +24,7 @@ UIChannelsLayout::UIChannelsLayout(const Interface &interface,
                          }),
           new_channels.end());
 
-      if (new_channels.size() == 0) {
+      if (new_channels.empty()) {
         onResultNoChannels();
         return;
       }

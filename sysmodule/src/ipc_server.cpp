@@ -3,14 +3,14 @@
 IPCServer *IPCServer::instance = nullptr;
 
 ams::Result NXCordService::IsConnected(const ams::sf::OutBuffer &out_path) {
-  IPCServer::instance->executeFunction([this, &out_path](NXCordClient &client) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
     setOut<bool>(out_path, client.isConnected());
   });
   return ams::ResultSuccess();
 }
 
 ams::Result NXCordService::IsConnecting(const ams::sf::OutBuffer &out_path) {
-  IPCServer::instance->executeFunction([this, &out_path](NXCordClient &client) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
     setOut<bool>(out_path, client.isConnecting());
   });
   return ams::ResultSuccess();
@@ -41,14 +41,14 @@ ams::Result NXCordService::Submit2faCode(const ams::sf::InBuffer &in_path,
                                          const ams::sf::OutBuffer &out_path) {
   auto code = reinterpret_cast<const char *>(in_path.GetPointer());
   IPCServer::instance->executeFunction(
-      [this, &code, &out_path](NXCordClient &client) {
+      [&code, &out_path](NXCordClient &client) {
         setOut<bool>(out_path, client.submit2faTicket(std::string(code)));
       });
   return ams::ResultSuccess();
 }
 
 ams::Result NXCordService::TokenAvailable(const ams::sf::OutBuffer &out_path) {
-  IPCServer::instance->executeFunction([this, &out_path](NXCordClient &client) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
     setOut<bool>(out_path, client.tokenAvailable());
   });
   return ams::ResultSuccess();
@@ -67,7 +67,7 @@ ams::Result NXCordService::StopConnection() {
 }
 
 ams::Result NXCordService::GetServers(const ams::sf::OutBuffer &out_path) {
-  IPCServer::instance->executeFunction([this, &out_path](NXCordClient &client) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
     const std::vector<IPCStruct::DiscordServer> &cached_servers =
         client.getCachedServers();
     IPCStruct::DiscordServers servers{};
@@ -117,7 +117,7 @@ ams::Result NXCordService::DisconnectVoiceChannel() {
 
 ams::Result NXCordService::IsConnectedVoiceChannel(
     const ams::sf::OutBuffer &out_path) {
-  IPCServer::instance->executeFunction([this, &out_path](NXCordClient &client) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
     setOut<bool>(out_path, client.isConnectedVoiceChannel());
   });
   return ams::ResultSuccess();
@@ -126,6 +126,69 @@ ams::Result NXCordService::IsConnectedVoiceChannel(
 ams::Result NXCordService::Logout() {
   IPCServer::instance->executeFunction(
       [](NXCordClient &client) { client.logout(); });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::SetMicrophoneAmplifier(
+    const ams::sf::InBuffer &in_path) {
+  IPCServer::instance->executeFunction([&in_path](NXCordClient &client) {
+    client.getSettings().setvoicemic_multiplier(
+        std::to_string(getIn<float>(in_path)));
+  });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::GetMicrophoneAmplifier(
+    const ams::sf::OutBuffer &out_path) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
+    setOut<float>(out_path,
+                  std::stof(client.getSettings().getvoicemic_multiplier()));
+  });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::SetGlobalAudioVolume(
+    const ams::sf::InBuffer &in_path) {
+  IPCServer::instance->executeFunction([&in_path](NXCordClient &client) {
+    client.getSettings().setvoiceglobal_audio_volume(
+        std::to_string(getIn<float>(in_path)));
+  });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::GetGlobalAudioVolume(
+    const ams::sf::OutBuffer &out_path) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
+    setOut<float>(
+        out_path,
+        std::stof(client.getSettings().getvoiceglobal_audio_volume()));
+  });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::GetMicrophoneVolume(
+    const ams::sf::OutBuffer &out_path) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
+    setOut<float>(out_path, client.getMicrophoneVolume());
+  });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::SetMicrophoneThreshold(
+    const ams::sf::InBuffer &in_path) {
+  IPCServer::instance->executeFunction([&in_path](NXCordClient &client) {
+    client.getSettings().setvoicemic_threshold(
+        std::to_string(getIn<float>(in_path)));
+  });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::GetMicrophoneThreshold(
+    const ams::sf::OutBuffer &out_path) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
+    setOut<float>(out_path,
+                  std::stof(client.getSettings().getvoicemic_threshold()));
+  });
   return ams::ResultSuccess();
 }
 

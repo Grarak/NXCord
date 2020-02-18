@@ -1,5 +1,3 @@
-#ifdef STANDALONE
-
 #include "standalone_client.hpp"
 
 #include <switch.h>
@@ -106,4 +104,39 @@ void StandaloneClient::logout() {
   _nxcord_client.logout();
 }
 
-#endif
+void StandaloneClient::setMicrophoneAmplifier(float multiplier) {
+  LOCK_CLIENT
+  _nxcord_client.getSettings().setvoicemic_multiplier(
+      std::to_string(multiplier));
+}
+
+float StandaloneClient::getMicrophoneAmplifier() {
+  LOCK_CLIENT
+  return std::stof(_nxcord_client.getSettings().getvoicemic_multiplier());
+}
+
+void StandaloneClient::setGlobalAudioVolume(float volume) {
+  LOCK_CLIENT
+  _nxcord_client.getSettings().setvoiceglobal_audio_volume(
+      std::to_string(volume));
+}
+
+float StandaloneClient::getGlobalAudioVolume() {
+  LOCK_CLIENT
+  return std::stof(_nxcord_client.getSettings().getvoiceglobal_audio_volume());
+}
+
+float StandaloneClient::getMicrophoneVolume() {
+  LOCK_CLIENT
+  return _nxcord_client.getMicrophoneVolume();
+}
+
+void StandaloneClient::setMicrophoneThreshold(float threshold) {
+  LOCK_CLIENT
+  _nxcord_client.getSettings().setvoicemic_threshold(std::to_string(threshold));
+}
+
+float StandaloneClient::getMicrophoneThreshold() {
+  LOCK_CLIENT
+  return std::stof(_nxcord_client.getSettings().getvoicemic_threshold());
+}

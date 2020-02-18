@@ -6,12 +6,23 @@
 
 #include "ui_result.hpp"
 
-class UICustomLayout : public pu::ui::Layout, public UIResultContainer {
+#define SCREEN_WIDTH 1280
+#define SCREEN_HEIGHT 720
+
+class UICustomLayout : public pu::ui::Layout,
+                       public UIResultContainer,
+                       public std::enable_shared_from_this<UICustomLayout> {
  public:
   using Interface = std::shared_ptr<NXCordComInterface>;
 
  protected:
   Interface _interface;
+
+  inline void onShowLayout(const std::shared_ptr<UICustomLayout> &layout) {
+    if (_listener) {
+      _listener->onShowLayout(shared_from_this(), layout);
+    }
+  }
 
  public:
   explicit UICustomLayout(Interface interface)

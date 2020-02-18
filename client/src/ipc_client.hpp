@@ -117,4 +117,32 @@ class IPCClient : public NXCordComInterface {
   }
 
   inline void logout() override { send(CommandId::Logout); }
+
+  inline void setMicrophoneAmplifier(float multiplier) override {
+    sendIn<float>(CommandId::SetMicrophoneAmplifier, multiplier);
+  }
+
+  inline float getMicrophoneAmplifier() override {
+    return sendOut<float>(CommandId::GetMicrophoneAmplifier);
+  }
+
+  inline void setGlobalAudioVolume(float volume) override {
+    sendIn<float>(CommandId::SetGlobalAudioVolume, volume);
+  }
+
+  inline float getGlobalAudioVolume() override {
+    return sendOut<float>(CommandId::GetGlobalAudioVolume);
+  }
+
+  inline float getMicrophoneVolume() override {
+    return sendOut<float>(CommandId::GetMicrophoneVolume);
+  }
+
+  inline void setMicrophoneThreshold(float threshold) override {
+    sendIn<float>(CommandId::SetMicrophoneThreshold, threshold);
+  }
+
+  inline float getMicrophoneThreshold() override {
+    return sendOut<float>(CommandId::GetMicrophoneThreshold);
+  }
 };

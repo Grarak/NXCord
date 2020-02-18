@@ -2,8 +2,9 @@
 
 UILogin2faLayout::UILogin2faLayout(const Interface &interface)
     : UICustomLayout(interface) {
-  _code_edit_text = UIElementEditText::New(0, 0, 1280 / 2, 100, "Code");
-  _submit_button = Button::New(1280 / 4 - 100, 250, 200, 100, "Submit",
+  _code_edit_text =
+      UIElementEditText::New(0, 0, SCREEN_HEIGHT / 2, 100, "Code");
+  _submit_button = Button::New(SCREEN_WIDTH / 4 - 100, 250, 200, 100, "Submit",
                                pu::ui::Color(0xff, 0xff, 0xff, 0xff),
                                pu::ui::Color(0, 0, 0xff, 0x80));
   _error_text = TextBlock::New(0, 400, "");

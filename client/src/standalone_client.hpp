@@ -1,7 +1,5 @@
 #pragma once
 
-#ifdef STANDALONE
-
 #include <switch.h>
 
 #include <common/loop_thread.hpp>
@@ -23,30 +21,29 @@ class StandaloneClient : public NXCordComInterface {
   ~StandaloneClient() override;
 
   bool isConnected() override;
-
   bool isConnecting() override;
 
   IPCStruct::LoginResult attemptLogin(const IPCStruct::Login &login) override;
-
   bool submit2faTicket(const std::string &code) override;
-
   bool tokenAvailable() override;
 
   void startConnection() override;
-
   void stopConnection() override;
 
   std::vector<IPCStruct::DiscordServer> getServers() override;
-
   std::vector<IPCStruct::DiscordChannel> getChannels(int64_t serverId) override;
 
   void joinVoiceChannel(int64_t serverId, int64_t channelId) override;
-
   void disconnectVoiceChannel() override;
-
   bool isConnectedVoiceChannel() override;
 
   void logout() override;
-};
 
-#endif
+  void setMicrophoneAmplifier(float multiplier) override;
+  float getMicrophoneAmplifier() override;
+  void setGlobalAudioVolume(float volume) override;
+  float getGlobalAudioVolume() override;
+  float getMicrophoneVolume() override;
+  void setMicrophoneThreshold(float threshold) override;
+  float getMicrophoneThreshold() override;
+};

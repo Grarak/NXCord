@@ -33,6 +33,9 @@ class ResultListener : public UIResultListener {
   void onResultNoChannels() override;
 
   bool onDialogJoinVoice() override;
+
+  void onShowLayout(const std::shared_ptr<UICustomLayout> &current,
+                    const std::shared_ptr<UICustomLayout> &ui) override;
 };
 
 class UIMain : public pu::ui::Application {
@@ -44,6 +47,8 @@ class UIMain : public pu::ui::Application {
     Connecting,
     Connected,
     ShowChannels,
+    Settings,
+    CustomLayout,
   };
 
   UIState _current_state = UIState::Login;
@@ -52,6 +57,8 @@ class UIMain : public pu::ui::Application {
   std::shared_ptr<ResultListener> _listener;
 
   UICustomLayout::Ref _current_layout;
+  UIState _previous_state;
+  UICustomLayout::Ref _previous_layout;
   time_t _connection_looked_up = 0;
 
   void showLogin();
@@ -65,6 +72,11 @@ class UIMain : public pu::ui::Application {
   void showServers();
 
   void showChannels(const IPCStruct::DiscordServer &server);
+
+  void showSettings();
+
+  void showLayout(const UICustomLayout::Ref &current,
+                  const UICustomLayout::Ref &layout);
 
   template <class Layout, class... Args>
   void loadCustomLayout(UIState state, Args &&... args);

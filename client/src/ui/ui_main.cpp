@@ -10,6 +10,7 @@
 #include "ui_login_layout.hpp"
 #include "ui_result.hpp"
 #include "ui_servers_layout.hpp"
+#include "ui_settings_layout.hpp"
 
 ResultListener::ResultListener(UIMain &uimain) : _ui_main(uimain) {}
 
@@ -26,7 +27,7 @@ void ResultListener::onResultConnected() {
   _ui_main.CreateShowDialog(
       "Info",
       "A : Confirm\nB : Back\n- : Disconnect from current voice "
-      "channel\n+ : Exit\nX: Disconnect",
+      "channel\n+ : Exit\nX: Disconnect\nY: Settings",
       {"Ok"}, false);
 }
 
@@ -44,6 +45,11 @@ bool ResultListener::onDialogJoinVoice() {
   return _ui_main.CreateShowDialog("Confirm",
                                    "Do you want to join this voice channel?",
                                    {"Yes", "No"}, false) == 0;
+}
+void ResultListener::onShowLayout(
+    const std::shared_ptr<UICustomLayout> &current,
+    const std::shared_ptr<UICustomLayout> &ui) {
+  _ui_main.showLayout(current, ui);
 }
 
 UIMain::UIMain(pu::ui::render::Renderer::Ref renderer,
@@ -81,7 +87,13 @@ void UIMain::OnLoad() {
         case UIState::Connected:
           break;
         case UIState::ShowChannels:
+        case UIState::Settings:
           showServers();
+          break;
+        case UIState::CustomLayout:
+          _current_state = _previous_state;
+          _current_layout = _previous_layout;
+          LoadLayout(_current_layout);
           break;
       }
     } else if (Down & KEY_MINUS) {
@@ -108,6 +120,9 @@ void UIMain::OnLoad() {
         default:
           break;
       }
+    } else if (Down & KEY_Y && (_current_state == UIState::Connected ||
+                                _current_state == UIState::ShowChannels)) {
+      showSettings();
     } else if (Down & KEY_PLUS) {
       Close();
     }
@@ -134,6 +149,19 @@ void UIMain::showServers() {
 
 void UIMain::showChannels(const IPCStruct::DiscordServer &server) {
   loadCustomLayout<UIChannelsLayout>(UIState::ShowChannels, server);
+}
+
+void UIMain::showSettings() {
+  loadCustomLayout<UISettingsLayout>(UIState ::Settings);
+}
+
+void UIMain::showLayout(const UICustomLayout::Ref &current,
+                        const UICustomLayout::Ref &layout) {
+  _previous_state = _current_state;
+  _current_state = UIState::CustomLayout;
+  _previous_layout = current;
+  layout->setResultListener(_listener);
+  LoadLayout(layout);
 }
 
 template <class Layout, class... Args>

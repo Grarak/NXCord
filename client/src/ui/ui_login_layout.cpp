@@ -2,11 +2,12 @@
 
 UILoginLayout::UILoginLayout(const Interface &interface)
     : UICustomLayout(interface) {
-  _email_edit_text = UIElementEditText::New(0, 0, 1280 / 2, 100, "Email");
+  _email_edit_text =
+      UIElementEditText::New(0, 0, SCREEN_WIDTH / 2, 100, "Email");
   _password_edit_text =
-      UIElementEditText::New(0, 100, 1280 / 2, 100, "Password",
+      UIElementEditText::New(0, 100, SCREEN_WIDTH / 2, 100, "Password",
                              UIElementEditText::InputType::PASSWORD);
-  _login_button = Button::New(1280 / 4 - 100, 250, 200, 100, "Login",
+  _login_button = Button::New(SCREEN_WIDTH / 4 - 100, 250, 200, 100, "Login",
                               pu::ui::Color(0xff, 0xff, 0xff, 0xff),
                               pu::ui::Color(0, 0, 0xff, 0x80));
   _error_text = TextBlock::New(0, 400, "");
