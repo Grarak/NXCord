@@ -1,6 +1,5 @@
 #include <switch.h>
 
-#include <common/logger.hpp>
 #include <nxcord/base64.hpp>
 #include <nxcord/discord_client.hpp>
 #include <nxcord/discord_schedule_handler.hpp>

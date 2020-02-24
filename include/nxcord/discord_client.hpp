@@ -2,6 +2,7 @@
 
 #include <sleepy_discord/sleepy_discord.h>
 
+#include <common/logger.hpp>
 #include <mutex>
 
 class DiscordScheduleHandler;
@@ -30,6 +31,11 @@ class DiscordClient : public SleepyDiscord::BaseDiscordClient {
                                 time_t milliseconds) override;
 
   void stopClient() override;
+
+  inline void processMessage(const std::string &message) override {
+    Logger::write("Client processing %s\n", message.c_str());
+    BaseDiscordClient::processMessage(message);
+  }
 
   friend DiscordScheduleHandler;
 

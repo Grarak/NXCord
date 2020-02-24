@@ -2,10 +2,13 @@
 
 #include <zlib.h>
 
-#include <string>
+#include <fstream>
 
 class ZlibWrapper {
  private:
+  std::istream *_stream = nullptr;
+  std::streamsize _stream_read_size = 0;
+  char _in_buf[1024]{};
   z_stream _infstream{};
 
  public:
@@ -13,5 +16,7 @@ class ZlibWrapper {
 
   ~ZlibWrapper();
 
-  std::string decompress(const char *buf, size_t length);
+  void set_stream(std::istream *stream);
+
+  int64_t read(char *buf, size_t size);
 };

@@ -6,6 +6,8 @@
 #include <common/logger.hpp>
 #include <cstring>
 #include <nxcord/discord_websocket.hpp>
+#include <nxcord/websocket_zlib_stream.hpp>
+#include <sstream>
 
 ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len,
                       int, void *user_data) {
@@ -63,15 +65,28 @@ void on_msg_recv_callback(wslay_event_context_ptr,
   std::string str_msg;
 
   if (discord_websocket->_zlib_compress) {
-    std::vector<char> &zlib_buf = discord_websocket->_zlib_buf;
-    zlib_buf.insert(zlib_buf.end(), msg, msg + arg->msg_length);
+    std::ofstream &zlib_buf = discord_websocket->_zlib_buf;
+    if (!zlib_buf.is_open()) {
+      std::remove(LOG_PATH "/.websocket_cache");
+      zlib_buf.open(LOG_PATH "/.websocket_cache", std::ios::binary);
+    }
+    zlib_buf.write(msg, arg->msg_length);
     if (arg->msg_length >= 4 &&
         std::memcmp(msg + arg->msg_length - 4, DiscordWebsocket::zlib_suffix,
                     4) == 0) {
-      str_msg = discord_websocket->_zlib_wrapper.decompress(zlib_buf.data(),
-                                                            zlib_buf.size());
-      zlib_buf.clear();
-      zlib_buf.shrink_to_fit();
+      Logger::write("Decompressing websocket\n");
+      zlib_buf.close();
+
+      std::ifstream read_stream(LOG_PATH "/.websocket_cache", std::ios::binary);
+      discord_websocket->_zlib_wrapper.set_stream(&read_stream);
+      WebsocketZlibStream websocket_zlib_stream(
+          discord_websocket->_zlib_wrapper);
+      discord_websocket->_message_processor->processStream(
+          websocket_zlib_stream);
+      while (websocket_zlib_stream.Take() !=
+             '\0')  // read rest of stream to satisfy zlib
+        ;
+      read_stream.close();
     }
   } else {
     str_msg = std::string(msg, msg + arg->msg_length);

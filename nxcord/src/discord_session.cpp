@@ -6,6 +6,7 @@
 #include <common/logger.hpp>
 #include <nxcord/discord_session.hpp>
 #include <nxcord/zlib_wrapper.hpp>
+#include <sstream>
 
 #define NEW_LINE "\r\n"
 constexpr const char *METHOD_NAMES[] = {"POST", "PATCH", "DELETE", "GET",
@@ -243,12 +244,22 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   if (it != response->header.end() && it->second == "gzip") {
     Logger::write("Decompressing body\n");
 
+    std::stringstream ss;
+    ss << response->text;
+    response->text.clear();
+    response->text.shrink_to_fit();
+
+    std::string decompressed;
     ZlibWrapper zlib_wrapper;
-    std::string decompressed =
-        zlib_wrapper.decompress(response->text.c_str(), response->text.size());
+    zlib_wrapper.set_stream(&ss);
+    while ((read_len = zlib_wrapper.read(reinterpret_cast<char *>(buf),
+                                         sizeof(buf))) > 0) {
+      decompressed.insert(decompressed.end(), buf, buf + read_len);
+    }
 
     response->text = std::move(decompressed);
   }
+  response->text.shrink_to_fit();
 
   Logger::write("Session done %s\n", _url.c_str());
 

@@ -42,7 +42,7 @@ class NXCordClient : public DiscordClient {
   std::vector<IPCStruct::DiscordServer> _servers;
   std::map<int64_t, std::vector<IPCStruct::DiscordChannel>> _channels;
 
-  void onReady(SleepyDiscord::Ready readyData) override;
+  void onReady() override;
 
   inline void onDisconnect() override {
     _ready = false;

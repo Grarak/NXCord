@@ -95,7 +95,7 @@ class VoiceEventHandler : public SleepyDiscord::BaseVoiceEventHandler {
   }
 };
 
-void NXCordClient::onReady(SleepyDiscord::Ready) {
+void NXCordClient::onReady() {
   Logger::write("NXCordClient: onReady\n");
   _ready = true;
   _servers.clear();
@@ -253,6 +253,7 @@ void NXCordClient::fillChannels(
   for (const auto &current_channels : channels) {
     cached_channels.push_back(create_ipc_channel(current_channels));
   }
+  cached_channels.shrink_to_fit();
 }
 
 const std::vector<IPCStruct::DiscordChannel> &NXCordClient::getCachedChannels(

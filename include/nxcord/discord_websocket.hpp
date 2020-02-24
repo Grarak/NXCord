@@ -19,7 +19,7 @@ class DiscordWebsocket : public SleepyDiscord::GenericWebsocketConnection {
   std::unique_ptr<MBedTLSWrapper> _mbedtls_wrapper;
 
   bool _zlib_compress;
-  std::vector<char> _zlib_buf;
+  std::ofstream _zlib_buf;
   ZlibWrapper _zlib_wrapper;
 
   wslay_event_context_ptr _wslay_event_context = nullptr;

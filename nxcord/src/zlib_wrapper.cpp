@@ -10,27 +10,37 @@ ZlibWrapper::ZlibWrapper() {
 
 ZlibWrapper::~ZlibWrapper() { inflateEnd(&_infstream); }
 
-std::string ZlibWrapper::decompress(const char *compressed, size_t length) {
-  std::string decompressed;
-  char buf[1024];
+void ZlibWrapper::set_stream(std::istream *stream) {
+  _stream = stream;
 
-  _infstream.avail_in = length;
-  _infstream.next_in = (Bytef *)compressed;
+  _infstream.avail_in = 0;
+  _infstream.total_in = 0;
 
-  while (true) {
-    _infstream.avail_out = sizeof(buf);
-    _infstream.next_out = reinterpret_cast<Bytef *>(buf);
-    _infstream.total_out = 0;
+  _infstream.total_out = 0;
 
-    int ret = inflate(&_infstream, Z_SYNC_FLUSH);
-    decompressed.insert(decompressed.end(), buf, buf + _infstream.total_out);
+  stream->seekg(0);
+}
 
-    if (ret == Z_STREAM_END || ret == Z_BUF_ERROR) {
-      break;
-    } else if (ret != Z_OK) {
-      Logger::write("Failed to decompress zlib %d\n", ret);
-      return decompressed;
+int64_t ZlibWrapper::read(char *buf, size_t size) {
+  if (_infstream.avail_in == 0) {
+    _stream_read_size = _stream->readsome(_in_buf, sizeof(_in_buf));
+    if (_stream_read_size == 0) {
+      return 0;
     }
+    _infstream.avail_in = _stream_read_size;
   }
-  return decompressed;
+
+  _infstream.next_in = reinterpret_cast<Bytef *>(_in_buf + _stream_read_size -
+                                                 _infstream.avail_in);
+
+  _infstream.avail_out = size;
+  _infstream.next_out = reinterpret_cast<Bytef *>(buf);
+
+  int ret = inflate(&_infstream, Z_SYNC_FLUSH);
+
+  if (ret != Z_OK && ret != Z_STREAM_END) {
+    Logger::write("Failed to decompress zlib %d %s\n", ret, _infstream.msg);
+    return ret;
+  }
+  return size - _infstream.avail_out;
 }
