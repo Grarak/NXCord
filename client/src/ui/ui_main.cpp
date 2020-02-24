@@ -8,6 +8,7 @@
 #include "ui_logged_in.hpp"
 #include "ui_login_2fa_layout.hpp"
 #include "ui_login_layout.hpp"
+#include "ui_no_sysmodule.hpp"
 #include "ui_result.hpp"
 #include "ui_servers_layout.hpp"
 #include "ui_settings_layout.hpp"
@@ -59,14 +60,25 @@ UIMain::UIMain(pu::ui::render::Renderer::Ref renderer,
       _listener(UIResultListener::New<ResultListener>(*this)) {}
 
 void UIMain::OnLoad() {
-  showLogin();
+  if (_interface->ping()) {
+    showLogin();
+  } else {
+    showNoSysmodule(false);
+  }
 
   AddThread([this]() {
-    if (Utils::check_interval(_connection_looked_up, 1000) &&
-        (_current_state == UIState::Connected ||
-         _current_state == UIState::ShowChannels) &&
-        _interface->isConnecting()) {
-      showConnecting();
+    if (_current_state != UIState::NoSysmodule) {
+      if (Utils::check_interval(_connection_looked_up, 1000)) {
+        if ((_current_state == UIState::Connected ||
+             _current_state == UIState::ShowChannels) &&
+            _interface->isConnecting()) {
+          showConnecting();
+        }
+
+        if (!_interface->ping()) {
+          showNoSysmodule(true);
+        }
+      }
     }
   });
 
@@ -94,6 +106,9 @@ void UIMain::OnLoad() {
           _current_state = _previous_state;
           _current_layout = _previous_layout;
           LoadLayout(_current_layout);
+          break;
+        case UIState::NoSysmodule:
+          Close();
           break;
       }
     } else if (Down & KEY_MINUS) {
@@ -152,7 +167,11 @@ void UIMain::showChannels(const IPCStruct::DiscordServer &server) {
 }
 
 void UIMain::showSettings() {
-  loadCustomLayout<UISettingsLayout>(UIState ::Settings);
+  loadCustomLayout<UISettingsLayout>(UIState::Settings);
+}
+
+void UIMain::showNoSysmodule(bool crashed) {
+  loadCustomLayout<UINoSysmodule>(UIState::NoSysmodule, crashed);
 }
 
 void UIMain::showLayout(const UICustomLayout::Ref &current,

@@ -21,6 +21,8 @@ class NXCordService : public ams::sf::IServiceObject {
     std::memcpy(out_path.GetPointer(), &out, sizeof(out));
   }
 
+  ams::Result Ping(const ams::sf::OutBuffer &out_path);
+
   ams::Result IsConnected(const ams::sf::OutBuffer &out_path);
   ams::Result IsConnecting(const ams::sf::OutBuffer &out_path);
 
@@ -53,6 +55,7 @@ class NXCordService : public ams::sf::IServiceObject {
 
  public:
   DEFINE_SERVICE_DISPATCH_TABLE{
+      MAKE_SERVICE_COMMAND_META(Ping),
       MAKE_SERVICE_COMMAND_META(IsConnected),
       MAKE_SERVICE_COMMAND_META(IsConnecting),
       MAKE_SERVICE_COMMAND_META(AttemptLogin),

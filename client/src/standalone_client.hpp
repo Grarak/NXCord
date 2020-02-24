@@ -20,6 +20,8 @@ class StandaloneClient : public NXCordComInterface {
 
   ~StandaloneClient() override;
 
+  inline bool ping() override { return true; }
+
   bool isConnected() override;
   bool isConnecting() override;
 

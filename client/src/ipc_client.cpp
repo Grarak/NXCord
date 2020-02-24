@@ -3,7 +3,6 @@
 #include <cstring>
 
 IPCClient::IPCClient() {
-  // TODO check for service availability
   Result rc = smGetService(&_service, SERVICE_NAME);
   Logger::write("smGetService: 0x%x\n", rc);
 }

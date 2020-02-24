@@ -25,7 +25,7 @@ class IPCClient : public NXCordComInterface {
   template <typename R>
   R sendOut(CommandId command) {
     int placeholder_id = 0;
-    R ret;
+    R ret{};
     Result rc = serviceDispatchOut(
         &_service, static_cast<int>(command), placeholder_id,
         .buffer_attrs = {SfBufferAttr_HipcMapAlias | SfBufferAttr_Out},
@@ -77,6 +77,8 @@ class IPCClient : public NXCordComInterface {
   IPCClient();
 
   ~IPCClient() override;
+
+  inline bool ping() override { return sendOut<bool>(CommandId::Ping); }
 
   inline bool isConnected() override {
     return sendOut<bool>(CommandId::IsConnected);

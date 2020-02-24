@@ -49,6 +49,7 @@ class UIMain : public pu::ui::Application {
     ShowChannels,
     Settings,
     CustomLayout,
+    NoSysmodule,
   };
 
   UIState _current_state = UIState::Login;
@@ -77,6 +78,8 @@ class UIMain : public pu::ui::Application {
 
   void showLayout(const UICustomLayout::Ref &current,
                   const UICustomLayout::Ref &layout);
+
+  void showNoSysmodule(bool crashed);
 
   template <class Layout, class... Args>
   void loadCustomLayout(UIState state, Args &&... args);

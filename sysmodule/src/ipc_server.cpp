@@ -2,6 +2,11 @@
 
 IPCServer *IPCServer::instance = nullptr;
 
+ams::Result NXCordService::Ping(const ams::sf::OutBuffer &out_path) {
+  setOut<bool>(out_path, true);
+  return ams::ResultSuccess();
+}
+
 ams::Result NXCordService::IsConnected(const ams::sf::OutBuffer &out_path) {
   IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
     setOut<bool>(out_path, client.isConnected());

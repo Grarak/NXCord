@@ -5,28 +5,29 @@
 
 #define SERVICE_NAME "nx:cord"
 
-#define IPC_COMMAND_ENUM          \
-  enum class CommandId {          \
-    IsConnected = 0,              \
-    IsConnecting = 1,             \
-    AttemptLogin = 2,             \
-    Submit2faCode = 3,            \
-    TokenAvailable = 4,           \
-    StartConnection = 5,          \
-    StopConnection = 6,           \
-    GetServers = 7,               \
-    GetChannels = 8,              \
-    JoinVoiceChannel = 9,         \
-    DisconnectVoiceChannel = 10,  \
-    IsConnectedVoiceChannel = 11, \
-    Logout = 12,                  \
-    SetMicrophoneAmplifier = 13,  \
-    GetMicrophoneAmplifier = 14,  \
-    SetGlobalAudioVolume = 15,    \
-    GetGlobalAudioVolume = 16,    \
-    GetMicrophoneVolume = 17,     \
-    SetMicrophoneThreshold = 18,  \
-    GetMicrophoneThreshold = 19,  \
+#define IPC_COMMAND_ENUM     \
+  enum class CommandId {     \
+    Ping = 0,                \
+    IsConnected,             \
+    IsConnecting,            \
+    AttemptLogin,            \
+    Submit2faCode,           \
+    TokenAvailable,          \
+    StartConnection,         \
+    StopConnection,          \
+    GetServers,              \
+    GetChannels,             \
+    JoinVoiceChannel,        \
+    DisconnectVoiceChannel,  \
+    IsConnectedVoiceChannel, \
+    Logout,                  \
+    SetMicrophoneAmplifier,  \
+    GetMicrophoneAmplifier,  \
+    SetGlobalAudioVolume,    \
+    GetGlobalAudioVolume,    \
+    GetMicrophoneVolume,     \
+    SetMicrophoneThreshold,  \
+    GetMicrophoneThreshold,  \
   };
 
 namespace IPCStruct {

@@ -8,6 +8,8 @@ class NXCordComInterface {
  public:
   virtual ~NXCordComInterface() = default;
 
+  virtual bool ping() = 0;
+
   virtual bool isConnected() = 0;
   virtual bool isConnecting() = 0;
 
