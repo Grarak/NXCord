@@ -1,0 +1,51 @@
+name: NXCord
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Updating repo
+        run:  git submodule update --init --recursive
+      - name: Installing devkitPro
+        run: |
+          wget https://github.com/devkitPro/pacman/releases/download/devkitpro-pacman-1.0.1/devkitpro-pacman.deb
+          sudo dpkg -i devkitpro-pacman.deb
+          sudo dkp-pacman -S $(dkp-pacman -Ssq switch-*) --noconfirm
+      - name: Building
+        run: |
+          export DEVKITPRO=/opt/devkitpro
+          mkdir build
+          cd build
+          cmake -DCMAKE_TOOLCHAIN_FILE=../DevkitA64Libnx.cmake ..
+          make -j$(nproc)
+      - name: Uploading sysmodule
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: sysmodule.nsp
+          path: build/sysmodule.nsp
+      - name: Uploading client
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: client.nro
+          path: build/client.nro
+      - name: Building other flavors
+        run: |
+          export DEVKITPRO=/opt/devkitpro
+          cd build
+          cmake -DCMAKE_TOOLCHAIN_FILE=../DevkitA64Libnx.cmake -DENABLE_CLIENT_STANDALONE=ON -DENABLE_SYSMODULE_APPLICATION=ON ..
+          make -j$(nproc)
+      - name: Uploading client
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: sysmodule_application.nro
+          path: build/sysmodule.nro
+      - name: Uploading client
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: client_standlone.nro
+          path: build/client.nro
