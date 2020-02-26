@@ -134,13 +134,30 @@ int main(int argc, char **argv) {
     std::mutex client_mutex;
 #ifdef APPLICATION
     client.startConnection();
+    bool joined = false;
 #else
     IPCServer ipc_server(client, client_mutex);
 #endif
 
     while (appletMainLoop()) {
       {
-#ifndef APPLICATION
+#ifdef APPLICATION
+        if (!joined && client.isConnected()) {
+          const std::vector<IPCStruct::DiscordServer> &servers =
+              client.getCachedServers();
+          if (servers.size() > 0) {
+            const std::vector<IPCStruct::DiscordChannel> &channels =
+                client.getCachedChannels(servers[0].id);
+            for (const auto &channel : channels) {
+              if (channel.type == IPCStruct::DiscordChannelType::SERVER_VOICE) {
+                client.joinVoiceChannel(channel.serverId, channel.id);
+                break;
+              }
+            }
+          }
+          joined = true;
+        }
+#else
         std::scoped_lock lock(client_mutex);
 #endif
         client.tick();
