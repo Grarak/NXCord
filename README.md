@@ -30,8 +30,13 @@ Might be safe, but I am not responsible for any bans!
 
 ## Limitations and bugs
 Because this whole application is actually running in the background as a custom sysmodule, there are memory restrictions.
-So if you ever see the sysmodule crashed screen, you will have to use a different account/bot. I'd recommend you to only
-join one or two not so busy servers.
+Discord is a memory hog, thus you will hit the memory limit of Atmosphere rather quickly. Even the login process alone, can
+take up to 20MiB. Fetching channel information of big discord servers will probably crash your switch. So if you ever see the
+sysmodule crashed screen, you will have to use a different account/bot. I'd recommend you to only join one or two not so busy servers.
+
+If you don't really care about the sysmodule aspect of this project you can also use the
+[standalone client](https://github.com/Grarak/NXCord/actions) version. It won't run in the background and you can use a
+discord account as big as you like.
 
 Also right now a lot of features are missing. Head over to [projects](https://github.com/Grarak/NXCord/projects) to see
 what possible features are planned for the future.
