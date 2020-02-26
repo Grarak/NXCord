@@ -12,6 +12,7 @@ mkdir -p release/atmosphere/contents/5600000000000000/flags
 mkdir -p release/switch
 cp build/client.nro release/switch/nxcord.nro
 cp build/sysmodule.nsp release/atmosphere/contents/5600000000000000/exefs.nsp
+cp sysmodule/toolbox.json release/atmosphere/contents/5600000000000000/
 touch release/atmosphere/contents/5600000000000000/flags/boot2.flag
 cd release
 zip -r release.zip *
