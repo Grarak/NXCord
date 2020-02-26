@@ -1,9 +1,9 @@
 # NXCord
-![GitHub](https://img.shields.io/github/license/Grarak/NXCord)
-![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Grarak/NXCord?include_prereleases)
-![GitHub All Releases](https://img.shields.io/github/downloads/Grarak/NXCord/total)
+[![GitHub](https://img.shields.io/github/license/Grarak/NXCord)](https://github.com/Grarak/NXCord/blob/master/LICENSE)
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Grarak/NXCord?include_prereleases)](https://github.com/Grarak/NXCord/releases)
+[![GitHub All Releases](https://img.shields.io/github/downloads/Grarak/NXCord/total)](https://github.com/Grarak/NXCord/releases)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FGrarak%2FNXCord.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FGrarak%2FNXCord?ref=badge_shield)
-![NXCord](https://github.com/Grarak/NXCord/workflows/NXCord/badge.svg)
+[![NXCord](https://github.com/Grarak/NXCord/workflows/NXCord/badge.svg)](https://github.com/Grarak/NXCord/actions)
 
 ## Unofficial Nintendo Switch Discord client
 Discord's TOS forbids the use of third party clients, thus use at your own risk! Also a lot of code has been taken from
