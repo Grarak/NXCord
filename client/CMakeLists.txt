@@ -22,7 +22,7 @@ string(TIMESTAMP TODAY "%Y%m%d")
 set_target_properties(client PROPERTIES
         APP_TITLE "NXCord"
         APP_AUTHOR "Grarak"
-        APP_VERSION "0.2-${TODAY}")
+        APP_VERSION "0.3-${TODAY}")
 
 target_link_libraries(client plutonium nxcord)
 
