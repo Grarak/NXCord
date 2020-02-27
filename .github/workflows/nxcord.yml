@@ -33,6 +33,11 @@ jobs:
         with:
           name: client.nro
           path: build/client.nro
+      - name: Uploading overlay
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: overlay.ovl
+          path: build/overlay.ovl
       - name: Building other flavors
         run: |
           export DEVKITPRO=/opt/devkitpro

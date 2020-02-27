@@ -18,11 +18,11 @@ if (ENABLE_CLIENT_STANDALONE)
     target_compile_definitions(client PRIVATE STANDALONE)
 endif ()
 
-string(TIMESTAMP TODAY "%Y%m%d")
+get_property(version GLOBAL PROPERTY NXCORD_VERSION)
 set_target_properties(client PROPERTIES
         APP_TITLE "NXCord"
         APP_AUTHOR "Grarak"
-        APP_VERSION "0.3-${TODAY}")
+        APP_VERSION "${version}")
 
 target_link_libraries(client plutonium nxcord)
 

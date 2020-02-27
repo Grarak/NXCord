@@ -141,12 +141,12 @@ void DiscordClient::onError(SleepyDiscord::ErrorCode errorCode,
 
 SleepyDiscord::Timer DiscordClient::schedule(SleepyDiscord::TimedTask code,
                                              const time_t milliseconds) {
-  return static_cast<DiscordScheduleHandler &>(getScheduleHandler())
+  return dynamic_cast<DiscordScheduleHandler &>(getScheduleHandler())
       .schedule(std::move(code), milliseconds);
 }
 
 void DiscordClient::stopClient() {
-  static_cast<DiscordScheduleHandler &>(getScheduleHandler()).clear();
+  dynamic_cast<DiscordScheduleHandler &>(getScheduleHandler()).clear();
 }
 
 bool DiscordClient::setLoginCredentials(const std::string &email,
@@ -286,5 +286,5 @@ void DiscordClient::tick() {
     }
   }
 
-  static_cast<DiscordScheduleHandler &>(getScheduleHandler()).tick();
+  dynamic_cast<DiscordScheduleHandler &>(getScheduleHandler()).tick();
 }

@@ -13,3 +13,6 @@
 [submodule "externals/wslay/wslay"]
 	path = externals/wslay/wslay
 	url = https://github.com/tatsuhiro-t/wslay.git
+[submodule "externals/libtesla/libtesla"]
+	path = externals/libtesla/libtesla
+	url = https://github.com/WerWolv/libtesla.git

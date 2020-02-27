@@ -312,6 +312,68 @@ function(add_nro_target target)
     set_target_properties(${target} PROPERTIES LINK_FLAGS "-specs=${LIBNX}/switch.specs")
 endfunction()
 
+function(add_ovl_target target)
+    get_filename_component(target_we ${target} NAME_WE)
+
+    # Extract metadata from the target.
+    get_target_property(icon ${target} "ICON")
+    get_target_property(romfs ${target} "ROMFS")
+
+    set_app_icon(${icon})
+
+    # Construct the `NROFLAGS` to invoke elf2nro with.
+    set(NROFLAGS "")
+
+    # Set icon for the NRO, if given.
+    if (__HOMEBREW_ICON)
+        string(APPEND ${NROFLAGS} "--icon=\"${__HOMEBREW_ICON}\"")
+    endif ()
+
+    # Add RomFS to the NRO, if given.
+    if (NOT "${romfs}" STREQUAL "romfs-NOTFOUND")
+        if (IS_DIRECTORY ${romfs})
+            # RomFS is a directory, pass --romfsdir to
+            # elf2nro and let it build an image for us.
+            string(APPEND ${NROFLAGS} " --romfsdir=\"${romfs}\"")
+        else ()
+            # A RomFS image was provided, which can be
+            # supplied to the --romfs flag.
+            if (EXISTS ${romfs})
+                string(APPEND ${NROFLAGS} " --romfs=\"${romfs}\"")
+            else ()
+                message(WARNING "The provided RomFS image at ${romfs} doesn't exist")
+            endif ()
+        endif ()
+    endif ()
+
+    # Build the NRO file.
+    if (NOT NO_NACP)
+        if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${target_we}.nacp)
+            __generate_nacp(${target})
+        endif ()
+
+        add_custom_command(
+                OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${target_we}.ovl
+                COMMAND ${elf2nro} $<TARGET_FILE:${target}> ${CMAKE_CURRENT_BINARY_DIR}/${target_we}.ovl --nacp=${CMAKE_CURRENT_BINARY_DIR}/${target_we}.nacp ${NROFLAGS}
+                DEPENDS ${target} ${CMAKE_CURRENT_BINARY_DIR}/${target_we}.nacp
+                VERBATIM
+        )
+    else ()
+        message(STATUS "No .nacp file will be generated for ${target_we}.ovl")
+
+        add_custom_command(
+                OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${target_we}.ovl
+                COMMAND ${elf2nro} $<TARGET_FILE:${target}> ${CMAKE_CURRENT_BINARY_DIR}/${target_we}.ovl ${NROFLAGS}
+                DEPENDS ${target}
+                VERBATIM
+        )
+    endif ()
+
+    # Add the respective NRO target and set the required linker flags for the original target.
+    add_custom_target(${target_we}_ovl ALL SOURCES ${CMAKE_CURRENT_BINARY_DIR}/${target_we}.ovl)
+    set_target_properties(${target} PROPERTIES LINK_FLAGS "-specs=${LIBNX}/switch.specs")
+endfunction()
+
 ## Builds a .nso file from a given target.
 ##
 ## NSOs are the main executable format on the Switch, however
