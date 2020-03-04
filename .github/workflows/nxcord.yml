@@ -44,12 +44,12 @@ jobs:
           cd build
           cmake -DCMAKE_TOOLCHAIN_FILE=../DevkitA64Libnx.cmake -DENABLE_CLIENT_STANDALONE=ON -DENABLE_SYSMODULE_APPLICATION=ON ..
           make -j$(nproc)
-      - name: Uploading client
+      - name: Uploading sysmodule application
         uses: actions/upload-artifact@v1.0.0
         with:
           name: sysmodule_application.nro
           path: build/sysmodule.nro
-      - name: Uploading client
+      - name: Uploading standalone client
         uses: actions/upload-artifact@v1.0.0
         with:
           name: client_standlone.nro
