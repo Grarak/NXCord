@@ -20,6 +20,9 @@ class NXCordAudioPlayer {
 
   LoopThread<NXCordAudioPlayer *> _player_thread;
 
+  std::map<uint32_t, float> _ssrc_multipliers;
+  mutable std::shared_mutex _ssrc_multipliers_mutex;
+
   friend void player_thread(NXCordAudioPlayer *audio_player);
 
  public:
@@ -29,4 +32,7 @@ class NXCordAudioPlayer {
 
   void queue(std::vector<SleepyDiscord::AudioSample> &audio,
              const SleepyDiscord::AudioTransmissionDetails &details);
+
+  void setSSRCMultiplier(uint32_t ssrc, float multiplier);
+  float getSSRCMultiplier(uint32_t ssrc) const;
 };

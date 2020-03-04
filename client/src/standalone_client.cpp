@@ -140,3 +140,34 @@ float StandaloneClient::getMicrophoneThreshold() {
   LOCK_CLIENT
   return std::stof(_nxcord_client.getSettings().getvoicemic_threshold());
 }
+
+std::vector<IPCStruct::DiscordVoiceState>
+StandaloneClient::getCurrentVoiceStates() {
+  LOCK_CLIENT
+  return _nxcord_client.getCurrentVoiceStates();
+}
+
+int64_t StandaloneClient::getUserID() {
+  LOCK_CLIENT
+  return _nxcord_client.getID().number();
+}
+
+IPCStruct::DiscordServer StandaloneClient::getServer(int64_t serverId) {
+  LOCK_CLIENT
+  return _nxcord_client.getServer(serverId);
+}
+
+IPCStruct::DiscordChannel StandaloneClient::getConnectedVoiceChannel() {
+  LOCK_CLIENT
+  return _nxcord_client.getConnectedVoiceChannel();
+}
+void StandaloneClient::setVoiceUserMultiplier(int64_t userId,
+                                              float multiplier) {
+  LOCK_CLIENT
+  _nxcord_client.setVoiceUserMultiplier(userId, multiplier);
+}
+
+float StandaloneClient::getVoiceUserMultiplier(int64_t userId) {
+  LOCK_CLIENT
+  return _nxcord_client.getVoiceUserMultiplier(userId);
+}

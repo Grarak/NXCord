@@ -92,16 +92,9 @@ void on_msg_recv_callback(wslay_event_context_ptr,
     str_msg = std::string(msg, msg + arg->msg_length);
   }
 
-  if (!str_msg.empty()) {
-    std::string log(str_msg.c_str(),
-                    str_msg.c_str() + std::min(str_msg.size(),
-                                               static_cast<size_t>(
-                                                   500)));  // Limit log output
-    Logger::write("Receive %s\n", log.c_str());
-    if (str_msg[0] == '{' || str_msg[0] == '[') {
-      discord_websocket->_message_processor->processMessage(str_msg);
-      Logger::write("Message processed\n");
-    }
+  if (!str_msg.empty() && (str_msg[0] == '{' || str_msg[0] == '[')) {
+    discord_websocket->_message_processor->processMessage(str_msg);
+    Logger::write("Message processed\n");
   }
 }
 

@@ -48,4 +48,13 @@ class StandaloneClient : public NXCordComInterface {
   float getMicrophoneVolume() override;
   void setMicrophoneThreshold(float threshold) override;
   float getMicrophoneThreshold() override;
+
+  std::vector<IPCStruct::DiscordVoiceState> getCurrentVoiceStates() override;
+  int64_t getUserID() override;
+
+  IPCStruct::DiscordServer getServer(int64_t serverId) override;
+  IPCStruct::DiscordChannel getConnectedVoiceChannel() override;
+
+  void setVoiceUserMultiplier(int64_t userId, float multiplier) override;
+  float getVoiceUserMultiplier(int64_t userId) override;
 };

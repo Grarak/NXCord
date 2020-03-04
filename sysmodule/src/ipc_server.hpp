@@ -53,6 +53,17 @@ class NXCordService : public ams::sf::IServiceObject {
   ams::Result SetMicrophoneThreshold(const ams::sf::InBuffer &in_path);
   ams::Result GetMicrophoneThreshold(const ams::sf::OutBuffer &out_path);
 
+  ams::Result GetVoiceStates(const ams::sf::OutBuffer &out_path);
+  ams::Result GetUserID(const ams::sf::OutBuffer &out_path);
+
+  ams::Result GetServer(const ams::sf::InBuffer &in_path,
+                        const ams::sf::OutBuffer &out_path);
+  ams::Result GetConnectedVoiceChannel(const ams::sf::OutBuffer &out_path);
+
+  ams::Result SetVoiceUserMultiplier(const ams::sf::InBuffer &in_path);
+  ams::Result GetVoiceUserMultiplier(const ams::sf::InBuffer &in_path,
+                                     const ams::sf::OutBuffer &out_path);
+
  public:
   DEFINE_SERVICE_DISPATCH_TABLE{
       MAKE_SERVICE_COMMAND_META(Ping),
@@ -76,6 +87,12 @@ class NXCordService : public ams::sf::IServiceObject {
       MAKE_SERVICE_COMMAND_META(GetMicrophoneVolume),
       MAKE_SERVICE_COMMAND_META(SetMicrophoneThreshold),
       MAKE_SERVICE_COMMAND_META(GetMicrophoneThreshold),
+      MAKE_SERVICE_COMMAND_META(GetVoiceStates),
+      MAKE_SERVICE_COMMAND_META(GetUserID),
+      MAKE_SERVICE_COMMAND_META(GetServer),
+      MAKE_SERVICE_COMMAND_META(GetConnectedVoiceChannel),
+      MAKE_SERVICE_COMMAND_META(SetVoiceUserMultiplier),
+      MAKE_SERVICE_COMMAND_META(GetVoiceUserMultiplier),
   };
 };
 

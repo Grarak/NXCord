@@ -10,3 +10,4 @@ file(GLOB common_src ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
 add_library(common STATIC ${common_src})
 
 target_include_directories(common PUBLIC include)
+target_link_libraries(common switch::libnx)

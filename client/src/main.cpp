@@ -6,7 +6,7 @@
 #ifdef STANDALONE
 #include "standalone_client.hpp"
 #else
-#include "ipc_client.hpp"
+#include <common/ipc_client.hpp>
 #endif
 #include "ui/ui_main.hpp"
 

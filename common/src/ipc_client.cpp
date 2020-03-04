@@ -1,5 +1,4 @@
-#include "ipc_client.hpp"
-
+#include <common/ipc_client.hpp>
 #include <cstring>
 
 IPCClient::IPCClient() {
@@ -20,7 +19,7 @@ std::vector<IPCStruct::DiscordServer> IPCClient::getServers() {
   std::vector<IPCStruct::DiscordServer> ret;
   auto servers = sendOut<IPCStruct::DiscordServers>(CommandId::GetServers);
   for (size_t i = 0; i < servers.size; ++i) {
-    ret.push_back(servers.servers[i]);
+    ret.push_back(servers.items[i]);
   }
   return ret;
 }
@@ -36,7 +35,7 @@ std::vector<IPCStruct::DiscordChannel> IPCClient::getChannels(
               CommandId::GetChannels, request))
              .size > 0) {
     for (size_t i = 0; i < channels.size; ++i) {
-      ret.push_back(channels.channels[i]);
+      ret.push_back(channels.items[i]);
     }
     ++request.offset;
   }
@@ -48,4 +47,14 @@ void IPCClient::joinVoiceChannel(int64_t serverId, int64_t channelId) {
   channel.serverId = serverId;
   channel.id = channelId;
   sendIn<IPCStruct::DiscordChannel>(CommandId::JoinVoiceChannel, channel);
+}
+
+std::vector<IPCStruct::DiscordVoiceState> IPCClient::getCurrentVoiceStates() {
+  std::vector<IPCStruct::DiscordVoiceState> ret;
+  auto states =
+      sendOut<IPCStruct::DiscordVoiceStates>(CommandId::GetVoiceStates);
+  for (size_t i = 0; i < states.size; ++i) {
+    ret.push_back(states.items[i]);
+  }
+  return ret;
 }

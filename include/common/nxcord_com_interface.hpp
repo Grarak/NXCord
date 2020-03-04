@@ -39,32 +39,12 @@ class NXCordComInterface {
   virtual void setMicrophoneThreshold(float threshold) = 0;
   virtual float getMicrophoneThreshold() = 0;
 
-  static IPCStruct::Login create_login(const std::string &email,
-                                       const std::string &password) {
-    IPCStruct::Login login{};
-    std::strncpy(login.email, email.c_str(), sizeof(login.email) - 1);
-    std::strncpy(login.password, password.c_str(), sizeof(login.password) - 1);
-    return login;
-  }
+  virtual std::vector<IPCStruct::DiscordVoiceState> getCurrentVoiceStates() = 0;
+  virtual int64_t getUserID() = 0;
 
-  static IPCStruct::DiscordServer create_discord_server(const std::string &name,
-                                                        int64_t id) {
-    IPCStruct::DiscordServer discord_server{};
-    std::strncpy(discord_server.name, name.c_str(),
-                 sizeof(discord_server.name) - 1);
-    discord_server.id = id;
-    return discord_server;
-  }
+  virtual IPCStruct::DiscordServer getServer(int64_t serverId) = 0;
+  virtual IPCStruct::DiscordChannel getConnectedVoiceChannel() = 0;
 
-  static IPCStruct::DiscordChannel create_discord_channel(
-      const std::string &name, int64_t serverId, int64_t id,
-      IPCStruct::DiscordChannelType type) {
-    IPCStruct::DiscordChannel discord_channel{};
-    std::strncpy(discord_channel.name, name.c_str(),
-                 sizeof(discord_channel.name) - 1);
-    discord_channel.serverId = serverId;
-    discord_channel.id = id;
-    discord_channel.type = type;
-    return discord_channel;
-  }
+  virtual void setVoiceUserMultiplier(int64_t userId, float multiplier) = 0;
+  virtual float getVoiceUserMultiplier(int64_t userId) = 0;
 };

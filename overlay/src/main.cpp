@@ -1,31 +1,16 @@
 #define TESLA_INIT_IMPL
+#define private public
+#define protected public
 #include <tesla.hpp>
+#undef private
+#undef protected
 
-class NXCordGui : public tsl::Gui {
- public:
-  tsl::elm::Element* createUI() override {
-    auto rootFrame = new tsl::elm::OverlayFrame("NXCord", NXCORD_VERSION);
-    return rootFrame;
-  }
+#include "nxcord_overlay.hpp"
 
-  void update() override {}
+namespace Logger {
+std::string_view log_name = "nxcord-overlay";
+}
 
-  bool handleInput(u64 keysDown, u64 keysHeld, touchPosition touchInput,
-                   JoystickPosition leftJoyStick,
-                   JoystickPosition rightJoyStick) override {
-    return false;
-  }
-};
-
-class NXCordOverlay : public tsl::Overlay<NXCordGui> {
- public:
-  void initServices() override {}
-  void exitServices() override {}
-
-  void onShow() override {}
-  void onHide() override {}
-};
-
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   return tsl::loop<NXCordOverlay>(argc, argv);
 }

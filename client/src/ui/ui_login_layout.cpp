@@ -15,7 +15,7 @@ UILoginLayout::UILoginLayout(const Interface &interface)
   _login_button->SetOnClick([this]() {
     _error_text->SetText("Logging in...");
     IPCStruct::LoginResult ret =
-        _interface->attemptLogin(NXCordComInterface::create_login(
+        _interface->attemptLogin(IPCStruct::create_login(
             _email_edit_text->getInput(), _password_edit_text->getInput()));
     if (ret.success) {
       onResultLoggedIn();

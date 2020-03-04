@@ -38,6 +38,7 @@ class NXCordClient : public DiscordClient {
   LocalVoiceContext _current_voice_context;
   SleepyDiscord::VoiceConnection *_current_voice_connection = nullptr;
   float _previous_mic_volume = 0;
+  std::map<int64_t, std::vector<IPCStruct::DiscordVoiceState>> _voice_states;
 
   std::vector<IPCStruct::DiscordServer> _servers;
   std::map<int64_t, std::vector<IPCStruct::DiscordChannel>> _channels;
@@ -80,6 +81,8 @@ class NXCordClient : public DiscordClient {
     return getChannelsPtr(channel.serverID);
   }
 
+  void onEditVoiceState(const SleepyDiscord::VoiceState &state) override;
+
   inline void onHeartbeat() override { Logger::write("Heartbeat sent\n"); }
 
   inline void onHeartbeatAck() override {
@@ -116,11 +119,27 @@ class NXCordClient : public DiscordClient {
 
   void joinVoiceChannel(int64_t serverId, int64_t channelId);
 
-  bool isConnectedVoiceChannel();
+  inline bool isConnectedVoiceChannel() const {
+    return _current_voice_connection != nullptr;
+  }
 
   void disconnectVoiceChannel();
 
+  IPCStruct::DiscordServer getServer(int64_t serverId) const;
+
+  IPCStruct::DiscordChannel getConnectedVoiceChannel() const;
+
+  inline const std::vector<IPCStruct::DiscordVoiceState>
+      &getCurrentVoiceStates() const {
+    const auto it =
+        _voice_states.find(_current_voice_context.channelID.number());
+    return it->second;
+  }
+
   inline NXCordSettings &getSettings() { return *_settings; }
 
-  inline float getMicrophoneVolume() { return _previous_mic_volume; }
+  inline float getMicrophoneVolume() const { return _previous_mic_volume; }
+
+  void setVoiceUserMultiplier(int64_t user_id, float multiplier);
+  float getVoiceUserMultiplier(int64_t user_id) const;
 };

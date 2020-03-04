@@ -5,29 +5,35 @@
 
 #define SERVICE_NAME "nx:cord"
 
-#define IPC_COMMAND_ENUM     \
-  enum class CommandId {     \
-    Ping = 0,                \
-    IsConnected,             \
-    IsConnecting,            \
-    AttemptLogin,            \
-    Submit2faCode,           \
-    TokenAvailable,          \
-    StartConnection,         \
-    StopConnection,          \
-    GetServers,              \
-    GetChannels,             \
-    JoinVoiceChannel,        \
-    DisconnectVoiceChannel,  \
-    IsConnectedVoiceChannel, \
-    Logout,                  \
-    SetMicrophoneAmplifier,  \
-    GetMicrophoneAmplifier,  \
-    SetGlobalAudioVolume,    \
-    GetGlobalAudioVolume,    \
-    GetMicrophoneVolume,     \
-    SetMicrophoneThreshold,  \
-    GetMicrophoneThreshold,  \
+#define IPC_COMMAND_ENUM      \
+  enum class CommandId {      \
+    Ping = 0,                 \
+    IsConnected,              \
+    IsConnecting,             \
+    AttemptLogin,             \
+    Submit2faCode,            \
+    TokenAvailable,           \
+    StartConnection,          \
+    StopConnection,           \
+    GetServers,               \
+    GetChannels,              \
+    JoinVoiceChannel,         \
+    DisconnectVoiceChannel,   \
+    IsConnectedVoiceChannel,  \
+    Logout,                   \
+    SetMicrophoneAmplifier,   \
+    GetMicrophoneAmplifier,   \
+    SetGlobalAudioVolume,     \
+    GetGlobalAudioVolume,     \
+    GetMicrophoneVolume,      \
+    SetMicrophoneThreshold,   \
+    GetMicrophoneThreshold,   \
+    GetVoiceStates,           \
+    GetUserID,                \
+    GetServer,                \
+    GetConnectedVoiceChannel, \
+    SetVoiceUserMultiplier,   \
+    GetVoiceUserMultiplier,   \
   };
 
 namespace IPCStruct {
@@ -65,19 +71,42 @@ struct DiscordChannel {
   DiscordChannelType type;
 };
 
-struct DiscordServers {
-  size_t size;
-  DiscordServer servers[100];  // 100 is the max number of server you can join
-};
-
 struct DiscordChannelsRequest {
   size_t offset;
   int64_t serverId;
 };
 
-struct DiscordChannels {
-  size_t size;
-  DiscordChannel channels[100];  // 500 is the limit of channels, pass them as
-                                 // chunks, otherwise it will get too big
+struct DiscordVoiceState {
+  int64_t userId;
+  char name[32];
 };
+
+struct DiscordVoiceUserMultiplier {
+  int64_t user_id;
+  float multiplier;
+};
+
+template <typename A, size_t max>
+struct Array {
+  size_t size;
+  A items[max];
+};
+
+typedef Array<DiscordServer, 100>
+    DiscordServers;  // 100 is the max number of server you can join
+
+typedef Array<DiscordChannel, 100>
+    DiscordChannels;  // 500 is the limit of channels, pass them as chunks,
+// otherwise it will get too big
+
+typedef Array<DiscordVoiceState, 100> DiscordVoiceStates;
+
+Login create_login(const std::string &email, const std::string &password);
+DiscordServer create_discord_server(const std::string &name, int64_t id);
+DiscordChannel create_discord_channel(const std::string &name, int64_t serverId,
+                                      int64_t id,
+                                      IPCStruct::DiscordChannelType type);
+DiscordVoiceState create_discord_voice_state(int64_t userId,
+                                             const std::string &name);
+
 }  // namespace IPCStruct

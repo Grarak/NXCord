@@ -23,7 +23,7 @@ ams::Result NXCordService::IsConnecting(const ams::sf::OutBuffer &out_path) {
 
 ams::Result NXCordService::AttemptLogin(const ams::sf::InBuffer &in_path,
                                         const ams::sf::OutBuffer &out_path) {
-  auto &login = getIn<IPCStruct::Login>(in_path);
+  auto login = getIn<IPCStruct::Login>(in_path);
 
   bool success = false;
   bool has2fa = false;
@@ -76,8 +76,8 @@ ams::Result NXCordService::GetServers(const ams::sf::OutBuffer &out_path) {
     const std::vector<IPCStruct::DiscordServer> &cached_servers =
         client.getCachedServers();
     IPCStruct::DiscordServers servers{};
-    servers.size = std::min(cached_servers.size(), sizeof(servers.servers));
-    std::memcpy(servers.servers, cached_servers.data(),
+    servers.size = std::min(cached_servers.size(), sizeof(servers.items));
+    std::memcpy(servers.items, cached_servers.data(),
                 sizeof(IPCStruct::DiscordServer) * servers.size);
     setOut<IPCStruct::DiscordServers>(out_path, servers);
   });
@@ -87,22 +87,21 @@ ams::Result NXCordService::GetServers(const ams::sf::OutBuffer &out_path) {
 ams::Result NXCordService::GetChannels(const ams::sf::InBuffer &in_path,
                                        const ams::sf::OutBuffer &out_path) {
   auto request = getIn<IPCStruct::DiscordChannelsRequest>(in_path);
-  IPCServer::instance->executeFunction(
-      [this, &request, &out_path](NXCordClient &client) {
-        const std::vector<IPCStruct::DiscordChannel> &cached_channels =
-            client.getCachedChannels(request.serverId);
-        IPCStruct::DiscordChannels channels{};
-        if (cached_channels.size() < request.offset * 100) {
-          channels.size = 0;
-        } else {
-          channels.size = cached_channels.size() - request.offset * 100;
-        }
-        channels.size = std::min(channels.size, sizeof(channels.channels));
-        std::memcpy(channels.channels,
-                    cached_channels.data() + request.offset * 100,
-                    sizeof(IPCStruct::DiscordChannel) * channels.size);
-        setOut<IPCStruct::DiscordChannels>(out_path, channels);
-      });
+  IPCServer::instance->executeFunction([&request,
+                                        &out_path](NXCordClient &client) {
+    const std::vector<IPCStruct::DiscordChannel> &cached_channels =
+        client.getCachedChannels(request.serverId);
+    IPCStruct::DiscordChannels channels{};
+    if (cached_channels.size() < request.offset * 100) {
+      channels.size = 0;
+    } else {
+      channels.size = cached_channels.size() - request.offset * 100;
+    }
+    channels.size = std::min(channels.size, sizeof(channels.items));
+    std::memcpy(channels.items, cached_channels.data() + request.offset * 100,
+                sizeof(IPCStruct::DiscordChannel) * channels.size);
+    setOut<IPCStruct::DiscordChannels>(out_path, channels);
+  });
   return ams::ResultSuccess();
 }
 
@@ -197,6 +196,66 @@ ams::Result NXCordService::GetMicrophoneThreshold(
   return ams::ResultSuccess();
 }
 
+ams::Result NXCordService::GetVoiceStates(const ams::sf::OutBuffer &out_path) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
+    const std::vector<IPCStruct::DiscordVoiceState> &current_voice_states =
+        client.getCurrentVoiceStates();
+    IPCStruct::DiscordVoiceStates states;
+    states.size = std::min(current_voice_states.size(), sizeof(states.items));
+    std::memcpy(states.items, current_voice_states.data(),
+                sizeof(IPCStruct::DiscordVoiceState) * states.size);
+    setOut<IPCStruct::DiscordVoiceStates>(out_path, states);
+  });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::GetUserID(const ams::sf::OutBuffer &out_path) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
+    setOut<int64_t>(out_path, client.getID().number());
+  });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::GetServer(const ams::sf::InBuffer &in_path,
+                                     const ams::sf::OutBuffer &out_path) {
+  IPCServer::instance->executeFunction(
+      [&in_path, &out_path](NXCordClient &client) {
+        auto serverId = getIn<int64_t>(in_path);
+        IPCStruct::DiscordServer server = client.getServer(serverId);
+        setOut<IPCStruct::DiscordServer>(out_path, server);
+      });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::GetConnectedVoiceChannel(
+    const ams::sf::OutBuffer &out_path) {
+  IPCServer::instance->executeFunction([&out_path](NXCordClient &client) {
+    auto channel = client.getConnectedVoiceChannel();
+    setOut<IPCStruct::DiscordChannel>(out_path, channel);
+  });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::SetVoiceUserMultiplier(
+    const ams::sf::InBuffer &in_path) {
+  IPCServer::instance->executeFunction([&in_path](NXCordClient &client) {
+    auto multiplier = getIn<IPCStruct::DiscordVoiceUserMultiplier>(in_path);
+    client.setVoiceUserMultiplier(multiplier.user_id, multiplier.multiplier);
+  });
+  return ams::ResultSuccess();
+}
+
+ams::Result NXCordService::GetVoiceUserMultiplier(
+    const ams::sf::InBuffer &in_path, const ams::sf::OutBuffer &out_path) {
+  IPCServer::instance->executeFunction(
+      [&in_path, &out_path](NXCordClient &client) {
+        auto user_id = getIn<int64_t>(in_path);
+        float multiplier = client.getVoiceUserMultiplier(user_id);
+        setOut<float>(out_path, multiplier);
+      });
+  return ams::ResultSuccess();
+}
+
 void ipc_session_thread(IPCServer *ipc_session) {
   ipc_session->_server_manager.WaitAndProcess();
 }
@@ -206,7 +265,7 @@ IPCServer::IPCServer(NXCordClient &client, std::mutex &client_mutex)
       _client_mutex(client_mutex),
       _ipc_session_thread(this, ipc_session_thread, 0x4000) {
   instance = this;
-  _server_manager.RegisterServer<NXCordService>(_service_name, 1);
+  _server_manager.RegisterServer<NXCordService>(_service_name, 2);
   _ipc_session_thread.start();
 }
 

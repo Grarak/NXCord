@@ -10,6 +10,8 @@ class AudioReceiver : public SleepyDiscord::BaseAudioOutput {
   NXCordClient &_client;
   NXCordAudioPlayer _player;
 
+  friend NXCordClient;
+
  public:
   explicit AudioReceiver(NXCordClient &client) : _client(client) {}
 
@@ -102,6 +104,7 @@ void NXCordClient::onReady() {
   _servers.shrink_to_fit();
   _channels.clear();
   _current_voice_connection = nullptr;
+  _voice_states.clear();
 
   std::vector<SleepyDiscord::Server> servers = getServers().vector();
   for (const auto &server : servers) {
@@ -134,6 +137,23 @@ void NXCordClient::onServer(SleepyDiscord::Server server) {
   Logger::write("NXCordClient: onServer %s %ld\n", server.name.c_str(),
                 server.ID.number());
   addServer(server);
+
+  for (const auto &voice_state : server.voiceStates) {
+    if (!voice_state.channelID.string().empty()) {
+      auto it = server.findMember(voice_state.userID);
+      if (it != server.members.end()) {
+        std::vector<IPCStruct::DiscordVoiceState> &states =
+            _voice_states[voice_state.channelID.number()];
+
+        std::string &name = it->nick;
+        if (name.empty()) {
+          name = it->user.username;
+        }
+        states.emplace_back(IPCStruct::create_discord_voice_state(
+            voice_state.userID.number(), name));
+      }
+    }
+  }
 }
 
 void NXCordClient::onEditServer(SleepyDiscord::Server editServer) {
@@ -145,9 +165,8 @@ void NXCordClient::onEditServer(SleepyDiscord::Server editServer) {
                            return editServer.ID.number() == server.id;
                          });
   if (it != _servers.end()) {
-    IPCStruct::DiscordServer discord_server =
-        NXCordComInterface::create_discord_server(editServer.name,
-                                                  editServer.ID.number());
+    IPCStruct::DiscordServer discord_server = IPCStruct::create_discord_server(
+        editServer.name, editServer.ID.number());
     *it = discord_server;
   }
 }
@@ -187,7 +206,7 @@ void NXCordClient::addServer(const SleepyDiscord::Server &serverToAdd) {
 
 inline IPCStruct::DiscordChannel create_ipc_channel(
     const SleepyDiscord::Channel &channel) {
-  return NXCordComInterface::create_discord_channel(
+  return IPCStruct::create_discord_channel(
       channel.name, channel.serverID.number(), channel.ID.number(),
       static_cast<IPCStruct::DiscordChannelType>(channel.type));
 }
@@ -268,6 +287,36 @@ const std::vector<IPCStruct::DiscordChannel> &NXCordClient::getCachedChannels(
   }
 }
 
+void NXCordClient::onEditVoiceState(const SleepyDiscord::VoiceState &state) {
+  for (auto &pair : _voice_states) {
+    std::vector<IPCStruct::DiscordVoiceState> &states = pair.second;
+    auto it = std::find_if(
+        states.begin(), states.end(),
+        [&state](const IPCStruct::DiscordVoiceState &discordVoiceState) {
+          return state.userID.number() == discordVoiceState.userId;
+        });
+    if (it != states.end()) {
+      states.erase(it);
+      if (states.empty()) {
+        _voice_states.erase(pair.first);
+      }
+      break;
+    }
+  }
+
+  if (!state.channelID.string().empty()) {
+    std::vector<IPCStruct::DiscordVoiceState> &states =
+        _voice_states[state.channelID.number()];
+    std::string name = state.serverMember.nick;
+    if (name.empty()) {
+      name = state.serverMember.user.username;
+    }
+
+    states.emplace_back(
+        IPCStruct::create_discord_voice_state(state.userID.number(), name));
+  }
+}
+
 void NXCordClient::joinVoiceChannel(int64_t serverId, int64_t channelId) {
   Logger::write("Joining voice channel %ld %ld\n", serverId, channelId);
 
@@ -283,16 +332,40 @@ void NXCordClient::joinVoiceChannel(int64_t serverId, int64_t channelId) {
   context.startVoiceHandler<VoiceEventHandler>(*this);
 }
 
-bool NXCordClient::isConnectedVoiceChannel() {
-  return _current_voice_connection != nullptr;
-}
-
 void NXCordClient::disconnectVoiceChannel() {
   if (_current_voice_connection) {
     removeVoiceConnectionAndContext(*_current_voice_connection);
     _current_voice_connection = nullptr;
     _current_voice_context = LocalVoiceContext();
   }
+}
+
+IPCStruct::DiscordServer NXCordClient::getServer(int64_t serverId) const {
+  auto it = std::find_if(_servers.begin(), _servers.end(),
+                         [&serverId](const IPCStruct::DiscordServer &server) {
+                           return serverId == server.id;
+                         });
+  if (it != _servers.end()) {
+    return *it;
+  }
+  return IPCStruct::DiscordServer();
+}
+
+IPCStruct::DiscordChannel NXCordClient::getConnectedVoiceChannel() const {
+  if (isConnectedVoiceChannel()) {
+    for (const auto &pair : _channels) {
+      const std::vector<IPCStruct::DiscordChannel> &channel = pair.second;
+      auto it = std::find_if(
+          channel.begin(), channel.end(),
+          [this](const IPCStruct::DiscordChannel &channel) {
+            return _current_voice_context.channelID.number() == channel.id;
+          });
+      if (it != channel.end()) {
+        return *it;
+      }
+    }
+  }
+  return IPCStruct::DiscordChannel();
 }
 
 void NXCordClient::loadSettings(std::unique_ptr<NXCordSettings> &settings) {
@@ -307,4 +380,31 @@ void NXCordClient::startConnection() {
     _settings->settoken(_token);
   }
   DiscordClient::startConnection();
+}
+
+void NXCordClient::setVoiceUserMultiplier(int64_t user_id, float multiplier) {
+  if (isConnectedVoiceChannel()) {
+    const std::map<int64_t, uint32_t> &ssrcs =
+        _current_voice_connection->getUserSSRCs();
+    auto it = ssrcs.find(user_id);
+    if (it != ssrcs.end()) {
+      auto &audio_receiver = dynamic_cast<AudioReceiver &>(
+          _current_voice_connection->getAudioOutput());
+      audio_receiver._player.setSSRCMultiplier(it->second, multiplier);
+    }
+  }
+}
+
+float NXCordClient::getVoiceUserMultiplier(int64_t user_id) const {
+  if (isConnectedVoiceChannel()) {
+    const std::map<int64_t, uint32_t> &ssrcs =
+        _current_voice_connection->getUserSSRCs();
+    auto it = ssrcs.find(user_id);
+    if (it != ssrcs.end()) {
+      auto &audio_receiver = dynamic_cast<AudioReceiver &>(
+          _current_voice_connection->getAudioOutput());
+      return audio_receiver._player.getSSRCMultiplier(it->second);
+    }
+  }
+  return 1;
 }

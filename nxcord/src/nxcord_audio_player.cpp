@@ -16,47 +16,56 @@ void player_thread(NXCordAudioPlayer *audio_player) {
     std::set<uint32_t> empty_ssrc;
     std::vector<AudioPacket> audio_sources;
 
-    audio_player->_queue_mutex.lock();
+    {
+      std::scoped_lock lock(audio_player->_queue_mutex);
 
-    for (auto &audio_pair : audio_player->_queue) {
-      if (audio_pair.second.empty()) {
-        empty_ssrc.insert(audio_pair.first);
-        continue;
-      }
+      for (auto &audio_pair : audio_player->_queue) {
+        if (audio_pair.second.empty()) {
+          empty_ssrc.insert(audio_pair.first);
+          continue;
+        }
 
-      AudioPacket *packet = &audio_pair.second.front();
-      while (current_time - packet->time >
-             100) {  // Make sure packet is not older than 100ms
+        AudioPacket *packet = &audio_pair.second.front();
+        while (current_time - packet->time >
+               100) {  // Make sure packet is not older than 100ms
+          audio_pair.second.pop();
+          if (audio_pair.second.empty()) {
+            packet = nullptr;
+            break;
+          }
+          packet = &audio_pair.second.front();
+        }
+
+        if (!packet) {
+          empty_ssrc.insert(audio_pair.first);
+          continue;
+        }
+
+        audio_sources.push_back(std::move(*packet));
         audio_pair.second.pop();
         if (audio_pair.second.empty()) {
-          packet = nullptr;
-          break;
+          empty_ssrc.insert(audio_pair.first);
         }
-        packet = &audio_pair.second.front();
       }
 
-      if (!packet) {
-        empty_ssrc.insert(audio_pair.first);
-        continue;
-      }
-
-      audio_sources.push_back(std::move(*packet));
-      audio_pair.second.pop();
-      if (audio_pair.second.empty()) {
-        empty_ssrc.insert(audio_pair.first);
+      for (uint32_t ssrc : empty_ssrc) {
+        audio_player->_queue.erase(ssrc);
       }
     }
-
-    for (uint32_t ssrc : empty_ssrc) {
-      audio_player->_queue.erase(ssrc);
-    }
-    audio_player->_queue_mutex.unlock();
 
     for (size_t i = 0; i < frame_size; ++i) {
       int sample = 0;
       for (const auto &packet : audio_sources) {
         if (i < packet.data.size()) {
-          sample += packet.data[i];
+          SleepyDiscord::AudioSample packet_sample = packet.data[i];
+          {
+            std::shared_lock lock(audio_player->_ssrc_multipliers_mutex);
+            auto it = audio_player->_ssrc_multipliers.find(packet.ssrc);
+            if (it != audio_player->_ssrc_multipliers.end()) {
+              packet_sample *= it->second;
+            }
+          }
+          sample += packet_sample;
         }
       }
       if (sample > Utils::audio_sample_max) {
@@ -117,4 +126,18 @@ void NXCordAudioPlayer::queue(
     queue.pop();
   }
   queue.push(AudioPacket{details.ssrc(), audio});
+}
+
+void NXCordAudioPlayer::setSSRCMultiplier(uint32_t ssrc, float multiplier) {
+  std::unique_lock lock(_ssrc_multipliers_mutex);
+  _ssrc_multipliers[ssrc] = multiplier;
+}
+
+float NXCordAudioPlayer::getSSRCMultiplier(uint32_t ssrc) const {
+  std::shared_lock lock(_ssrc_multipliers_mutex);
+  auto it = _ssrc_multipliers.find(ssrc);
+  if (it != _ssrc_multipliers.end()) {
+    return it->second;
+  }
+  return 1;
 }

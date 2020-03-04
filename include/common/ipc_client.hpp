@@ -2,10 +2,11 @@
 
 #include <switch.h>
 
-#include <common/ipc_structures.hpp>
-#include <common/logger.hpp>
-#include <common/nxcord_com_interface.hpp>
 #include <string>
+
+#include "ipc_structures.hpp"
+#include "logger.hpp"
+#include "nxcord_com_interface.hpp"
 
 class IPCClient : public NXCordComInterface {
  private:
@@ -146,5 +147,31 @@ class IPCClient : public NXCordComInterface {
 
   inline float getMicrophoneThreshold() override {
     return sendOut<float>(CommandId::GetMicrophoneThreshold);
+  }
+
+  std::vector<IPCStruct::DiscordVoiceState> getCurrentVoiceStates() override;
+
+  inline int64_t getUserID() override {
+    return sendOut<int64_t>(CommandId::GetUserID);
+  }
+
+  inline IPCStruct::DiscordServer getServer(int64_t serverId) override {
+    return sendInOut<IPCStruct::DiscordServer, int64_t>(CommandId::GetServer,
+                                                        serverId);
+  }
+
+  inline IPCStruct::DiscordChannel getConnectedVoiceChannel() override {
+    return sendOut<IPCStruct::DiscordChannel>(
+        CommandId::GetConnectedVoiceChannel);
+  }
+
+  inline void setVoiceUserMultiplier(int64_t userId,
+                                     float multiplier) override {
+    sendIn<IPCStruct::DiscordVoiceUserMultiplier>(
+        CommandId::SetVoiceUserMultiplier, {userId, multiplier});
+  }
+
+  inline float getVoiceUserMultiplier(int64_t userId) override {
+    return sendInOut<float, int64_t>(CommandId::GetVoiceUserMultiplier, userId);
   }
 };

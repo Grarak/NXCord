@@ -9,7 +9,7 @@ file(GLOB overlay_src ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
 
 add_executable(overlay ${overlay_src})
 
-target_link_libraries(overlay libtesla)
+target_link_libraries(overlay libtesla common)
 
 get_property(version GLOBAL PROPERTY NXCORD_VERSION)
 set_target_properties(overlay PROPERTIES
