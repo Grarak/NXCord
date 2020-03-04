@@ -45,6 +45,11 @@ what possible features are planned for the future.
 The switch itself doesn't have any external microphones, so you do need to plug in headphones/earbuds to actually utilise
 speaking.
 
+### Tesla overlay
+Right now there are two bugs.
+- When you open NXCord in the overlay menu, the overlay itself will disappear. Just reopen it.
+- Voice channel won't refresh by itself when participants join or leave. Press B and reopen to manually refresh.
+
 ## Building NXCord
 
 ### Dependencies
