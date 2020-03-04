@@ -14,7 +14,7 @@ https://github.com/yourWaifu/Unofficial-Discord-3DS-Client, so thanks a lot for 
 ## Installation and usage
 Download the latest build from [Releases](https://github.com/Grarak/NXCord/releases). Extract it to the root of your
 sdcard you use for your switch. You do need to reboot your system, otherwise the sysmodule won't start running. After
-rebooting you can open NXCord in homebrew menu and you will see a login screen, if you it's you first time using it.
+rebooting you can open NXCord in homebrew menu and you will see a login screen, if it's your first time using it.
 
 ### Using a bot
 Since selfbotting is not allowed, I'd recommend you to use a bot. If you don't know how to do it, just follow these
@@ -24,7 +24,7 @@ put your token there. For example your first line in the file should be ```token
 your switch after modifying that file.
 
 ### Selfbotting
-Selbotting means that you are using a third pary client to access discord with an user account. It's against the TOS of
+Selfbotting means that you are using a third party client to access discord with an user account. It's against the TOS of
 discord, thus not recommended. I've been using an user account for testing for months already and haven't been banned yet.
 Might be safe, but I am not responsible for any bans!
 
@@ -32,7 +32,8 @@ Might be safe, but I am not responsible for any bans!
 Because this whole application is actually running in the background as a custom sysmodule, there are memory restrictions.
 Discord is a memory hog, thus you will hit the memory limit of Atmosphere rather quickly. Even the login process alone, can
 take up to 20MiB. Fetching channel information of big discord servers will probably crash your switch. So if you ever see the
-sysmodule crashed screen, you will have to use a different account/bot. I'd recommend you to only join one or two not so busy servers.
+sysmodule crashed screen, you will have to use a different account/bot. I'd recommend you to only join one or two not so
+busy servers.
 
 If you don't really care about the sysmodule aspect of this project you can also use the
 [standalone client](https://github.com/Grarak/NXCord/actions) version. It won't run in the background and you can use a
