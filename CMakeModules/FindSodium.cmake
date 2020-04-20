@@ -7,7 +7,7 @@ endif ()
 set(SODIUM_INCLUDE_DIR ${DEVKITPRO}/portlibs/switch/include)
 set(SODIUM_LIBRARY ${DEVKITPRO}/portlibs/switch/lib/libsodium.a)
 
-find_package_handle_standard_args(SODIUM DEFAULT_MSG
+find_package_handle_standard_args(Sodium DEFAULT_MSG
         SODIUM_INCLUDE_DIR SODIUM_LIBRARY)
 
 mark_as_advanced(SODIUM_INCLUDE_DIR SODIUM_LIBRARY)

@@ -39,7 +39,7 @@ find_library(LIBNX_LIBRARY NAMES libnx.a
 set(LIBNX_INCLUDE_DIRS ${LIBNX_INCLUDE_DIR})
 set(LIBNX_LIBRARIES ${LIBNX_LIBRARY})
 
-find_package_handle_standard_args(LIBNX DEFAULT_MSG
+find_package_handle_standard_args(Libnx DEFAULT_MSG
         LIBNX_INCLUDE_DIR LIBNX_LIBRARY)
 
 mark_as_advanced(LIBNX_INCLUDE_DIR LIBNX_LIBRARY)

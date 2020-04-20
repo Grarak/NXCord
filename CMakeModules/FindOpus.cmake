@@ -7,7 +7,7 @@ endif ()
 set(OPUS_INCLUDE_DIR ${DEVKITPRO}/portlibs/switch/include/opus)
 set(OPUS_LIBRARY ${DEVKITPRO}/portlibs/switch/lib/libopus.a)
 
-find_package_handle_standard_args(OPUS DEFAULT_MSG
+find_package_handle_standard_args(Opus DEFAULT_MSG
         OPUS_INCLUDE_DIR OPUS_LIBRARY)
 
 mark_as_advanced(OPUS_INCLUDE_DIR OPUS_LIBRARY)

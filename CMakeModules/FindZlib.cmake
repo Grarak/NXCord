@@ -7,7 +7,7 @@ endif ()
 set(ZLIB_INCLUDE_DIR ${DEVKITPRO}/portlibs/switch/include)
 set(ZLIB_LIBRARY ${DEVKITPRO}/portlibs/switch/lib/libz.a)
 
-find_package_handle_standard_args(ZLIB DEFAULT_MSG
+find_package_handle_standard_args(Zlib DEFAULT_MSG
         ZLIB_INCLUDE_DIR ZLIB_LIBRARY)
 
 mark_as_advanced(ZLIB_INCLUDE_DIR ZLIB_LIBRARY)

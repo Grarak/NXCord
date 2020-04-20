@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
-find_package(PlutoniumDeps REQUIRED)
+find_package(PlutoniumLibs REQUIRED)
 
 add_library(plutonium STATIC
         ${CMAKE_CURRENT_LIST_DIR}/Plutonium/Plutonium/Source/pu/ui/render/render_SDL2.cpp

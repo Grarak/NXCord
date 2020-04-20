@@ -31,7 +31,7 @@ foreach (DEP IN LISTS PLUTONIUM_DEPS)
     list(APPEND PLUTONIUM_LIBRARIES ${${DEP}_LIBRARY})
 endforeach ()
 
-find_package_handle_standard_args(PLUTONIUM_LIBS
+find_package_handle_standard_args(PlutoniumLibs
         DEFAULT_MSG
         PLUTONIUM_LIBS_INCLUDE_DIRS PLUTONIUM_LIBRARIES
         )
