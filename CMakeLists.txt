@@ -20,6 +20,7 @@ find_package(Sodium REQUIRED)
 find_package(Zlib REQUIRED)
 
 include(externals/Atmosphere-libs/CMakeLists.txt)
+include(externals/http-parser/CMakeLists.txt)
 include(externals/libtesla/CMakeLists.txt)
 include(externals/Plutonium/CMakeLists.txt)
 include(externals/SimpleIniParser/CMakeLists.txt)

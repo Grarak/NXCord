@@ -16,3 +16,6 @@
 [submodule "externals/libtesla/libtesla"]
 	path = externals/libtesla/libtesla
 	url = https://github.com/WerWolv/libtesla.git
+[submodule "externals/http-parser/http-parser"]
+	path = externals/http-parser/http-parser
+	url = https://github.com/nodejs/http-parser.git

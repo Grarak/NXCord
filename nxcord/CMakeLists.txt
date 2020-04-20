@@ -11,4 +11,4 @@ add_library(nxcord STATIC ${nxcord_src})
 
 target_include_directories(nxcord PUBLIC include)
 target_link_libraries(nxcord PUBLIC wslay switch::libnx ${MBEDTLS_LIBRARIES}
-        simpleiniparser sleepy-discord common ${ZLIB_LIBRARY})
+        simpleiniparser sleepy-discord common ${ZLIB_LIBRARY} http-parser)

@@ -1,3 +1,4 @@
+#include <http_parser.h>
 #include <netdb.h>
 #include <switch.h>
 #include <sys/socket.h>
@@ -11,6 +12,7 @@
 #define NEW_LINE "\r\n"
 constexpr const char *METHOD_NAMES[] = {"POST", "PATCH", "DELETE", "GET",
                                         "PUT"};
+constexpr const char HTTP_CHUNK_TERMINATION[] = {0x30, '\r', '\n', '\r', '\n'};
 
 SleepyDiscord::CustomInit SleepyDiscord::Session::init =
     []() -> SleepyDiscord::GenericSession * { return new DiscordSession; };
@@ -115,7 +117,7 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   }
 
   std::string metadata = METHOD_NAMES[method];
-  metadata.append(" ").append(path).append(" HTTP/1.0").append(NEW_LINE);
+  metadata.append(" ").append(path).append(" HTTP/1.1").append(NEW_LINE);
   metadata.append("Host: ").append(hostname).append(NEW_LINE);
 
   if (!contains_header("Accept")) {
@@ -146,7 +148,6 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   }
 
   Logger::write("Sending payload\n");
-
   ret = mbedtls_wrapper->write(
       reinterpret_cast<const unsigned char *>(metadata.c_str()),
       metadata.size());
@@ -170,96 +171,113 @@ std::unique_ptr<MBedTLSWrapper> DiscordSession::request(
   Logger::write("Reading response\n");
   int buf_size = 1024;
   unsigned char buf[buf_size];
-  bool collect_headers = true;
-  std::string header_buf;
   int read_len;
-  while ((read_len = mbedtls_wrapper->read(buf, buf_size)) > 0) {
-    buf[read_len] = '\0';
+  char last_chars[sizeof(HTTP_CHUNK_TERMINATION)] = {0};
+  bool headers_done = false;
+  std::string response_buf;
 
-    if (collect_headers) {
-      int header_start = 0;
-      int header_end = 0;
+  http_parser parser;
+  http_parser_settings parser_settings;
+  bool connection_upgrade = false;
 
-      for (; header_end < read_len; ++header_end) {
-        if (buf[header_end] == '\r') {
-          if (header_buf.empty() && header_start == header_end) {
-            collect_headers = false;
-            if (header_end + 2 < read_len) {
-              response->text.insert(response->text.end(), buf + header_end + 2,
-                                    buf + read_len);
-            }
-            break;
-          }
+  while ((read_len = mbedtls_wrapper->read(buf, buf_size)) >= 0) {
+    if (read_len > 0) {
+      size_t copy_size = std::min(sizeof(HTTP_CHUNK_TERMINATION),
+                                  static_cast<size_t>(read_len));
+      std::memcpy(last_chars + sizeof(HTTP_CHUNK_TERMINATION) - copy_size,
+                  buf + read_len - copy_size, copy_size);
 
-          std::string new_header = header_buf;
-          new_header.insert(new_header.end(), buf + header_start,
-                            buf + header_end);
-          if (response->header.empty() && new_header.substr(0, 4) == "HTTP") {
-            response->statusCode = stoi(new_header.substr(9, 3));
-          } else {
-            size_t key_size = new_header.find(": ");
-            if (key_size > 0) {
-              std::string key = new_header.substr(0, key_size);
-              std::string value =
-                  new_header.substr(key_size + 2, new_header.size());
-              response->header[std::move(key)] = std::move(value);
-            }
-          }
-          header_buf.clear();
-          header_start = ++header_end;  // Skip \n
-          ++header_start;               // Skip \n
-          continue;
-        }
-
-        if (buf[header_end] == '\n') {
-          ++header_start;  // Skip \n
-        }
+      if (std::memcmp(last_chars, HTTP_CHUNK_TERMINATION, sizeof(last_chars)) ==
+          0) {
+        break;
       }
-
-      if (collect_headers && header_start < header_end) {
-        std::string test;
-        test.insert(test.end(), buf + header_start, buf + header_end);
-        header_buf.insert(header_buf.end(), buf + header_start,
-                          buf + header_end);
-      }
-    } else {
-      response->text.insert(
-          response->text.end(), buf,
-          buf + read_len);  // TODO use content length if possible
     }
 
-    auto it = response->header.find("Connection");
-    if (it != response->header.end() && it->second == "upgrade") {
-      if (read_len < buf_size) {
-        break;
-      }
-    } else {
-      if (read_len < 0) {
-        break;
+    response_buf.append(buf, buf + read_len);
+    if (!headers_done) {
+      size_t index = response_buf.find("\r\n\r\n");
+      if (index != std::string::npos) {
+        std::string header(response_buf.c_str(), response_buf.c_str() + index);
+
+        struct Data {
+          std::string parsed_header_key;
+          SleepyDiscord::Response *response;
+        };
+        Data data = Data{.response = response};
+
+        http_parser_init(&parser, HTTP_RESPONSE);
+        http_parser_settings_init(&parser_settings);
+
+        parser.data = &data;
+
+        parser_settings.on_header_field = [](http_parser *parser,
+                                             const char *at, size_t length) {
+          std::string key(at, at + length);
+          auto data = reinterpret_cast<Data *>(parser->data);
+          data->parsed_header_key = std::move(key);
+          return 0;
+        };
+
+        parser_settings.on_header_value = [](http_parser *parser,
+                                             const char *at, size_t length) {
+          std::string value(at, at + length);
+          auto data = reinterpret_cast<Data *>(parser->data);
+          data->response->header[data->parsed_header_key] = std::move(value);
+          return 0;
+        };
+
+        http_parser_execute(&parser, &parser_settings, header.c_str(),
+                            header.size());
+        response->statusCode = parser.status_code;
+
+        headers_done = true;
+
+        if (response->header["Connection"] == "upgrade") {
+          connection_upgrade = true;
+          break;
+        }
       }
     }
   }
 
-  auto it = response->header.find("Content-Encoding");
-  if (it != response->header.end() && it->second == "gzip") {
-    Logger::write("Decompressing body\n");
+  if (!connection_upgrade) {
+    http_parser_init(&parser, HTTP_RESPONSE);
+    http_parser_settings_init(&parser_settings);
 
-    std::stringstream ss;
-    ss << response->text;
-    response->text.clear();
+    parser.data = response;
+
+    parser_settings.on_body = [](http_parser *parser, const char *at,
+                                 size_t length) {
+      std::string body(at, at + length);
+      auto response = reinterpret_cast<SleepyDiscord::Response *>(parser->data);
+      response->text = std::move(body);
+      return 0;
+    };
+
+    http_parser_execute(&parser, &parser_settings, response_buf.c_str(),
+                        response_buf.size());
+
+    auto it = response->header.find("content-encoding");
+    if (it != response->header.end() && it->second == "gzip") {
+      Logger::write("Decompressing body\n");
+
+      std::stringstream ss;
+      ss << response->text;
+      response->text.clear();
+      response->text.shrink_to_fit();
+
+      std::string decompressed;
+      ZlibWrapper zlib_wrapper;
+      zlib_wrapper.set_stream(&ss);
+      while ((read_len = zlib_wrapper.read(reinterpret_cast<char *>(buf),
+                                           sizeof(buf))) > 0) {
+        decompressed.insert(decompressed.end(), buf, buf + read_len);
+      }
+
+      response->text = std::move(decompressed);
+    }
     response->text.shrink_to_fit();
-
-    std::string decompressed;
-    ZlibWrapper zlib_wrapper;
-    zlib_wrapper.set_stream(&ss);
-    while ((read_len = zlib_wrapper.read(reinterpret_cast<char *>(buf),
-                                         sizeof(buf))) > 0) {
-      decompressed.insert(decompressed.end(), buf, buf + read_len);
-    }
-
-    response->text = std::move(decompressed);
   }
-  response->text.shrink_to_fit();
 
   Logger::write("Session done %s\n", _url.c_str());
 
