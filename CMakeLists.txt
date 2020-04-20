@@ -5,7 +5,7 @@ project(nxcord-all)
 message(STATUS "Using toolchain file: ${CMAKE_TOOLCHAIN_FILE}.")
 
 string(TIMESTAMP TODAY "%Y%m%d")
-set(VERSION "0.4-${TODAY}")
+set(VERSION "0.4.1-${TODAY}")
 set_property(GLOBAL PROPERTY NXCORD_VERSION ${VERSION})
 add_definitions(-DNXCORD_VERSION="${VERSION}")
 
